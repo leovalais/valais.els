@@ -146,13 +146,16 @@ optimization involving determining whether \code{boolean} is a sub-type of
 
 Another kind of problem for which \code{subtypep}'s accuracy matters is the
 optimization of the \code{typecase} construct as shown in \cite{newton.18.phd}
-and \cite{newton.18.els}.
-\textbf{TODO}
+and \cite{newton.18.els}. The aim is to remove redundant checks in the construct
+and their approach is to use binary decision diagrams. However, to build such a
+structure, \code{subtypep} is repeatedly used. The unreliability of the
+predicate leads here to many lost BDD reductions and therefore to the
+genereation of not optimal code.
 
-Our implementation is still in active development and currently targets
+Our implementation is still in active development, currently targets
 \sbcl{} and focuses almost entirely on results accuracy. It supports
-primitive types, user-defined types (\code{deftype}, classes and structures),
-\code{member} (and \code{eql}) type specifiers and ranges (e.g.,
+\emph{primitive} types, \emph{user-defined} types (\code{deftype}, classes and structures),
+\emph{\code{member} (and \code{eql})} type specifiers and \emph{ranges} (e.g.,
 \code{(integer * 12)}). We will present our strategy for implementing each one
 of these while discussing how and why we decided or not to diverge from Baker's
 \cite{baker1992}
