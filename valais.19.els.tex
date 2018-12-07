@@ -12,14 +12,16 @@
 \usepackage{tocloft}
 \usepackage{amsthm} % example env
 \usepackage{enumitem} % description env
+\usepackage{tikz}
 
 \usemintedstyle{xcode}
 \newminted{cl}{autogobble,breaklines,escapeinside=||,fontsize=\small}
 
-\newcommand\code[1]{\sloppy\texttt{\small #1}}
+\newcommand\code[2][\small]{\sloppy\texttt{#1 #2}}
 \theoremstyle{definition}
 \newtheorem{example}{Example}
 
+\usetikzlibrary{positioning,shapes,shadows}
 
 
 \bibliographystyle{alpha}
@@ -28,7 +30,7 @@
 \acmISBN{978-2-9557474-2-1}
 \acmDOI{}
 
-\title{Comments on implementing Baker's Common Lisp SUBTYPEP decision procedure}
+\title{Implementing Baker's SUBTYPEP decision procedure}
 
 \author{Léo Valais}
 \email{lvalais@lrde.epita.fr}
@@ -76,6 +78,7 @@
 
 
 \newcommand\sbcl{\textsc{Sbcl}}
+\newcommand\then{$\rightarrow$}
 
 \begin{document}
 
@@ -277,8 +280,80 @@ Follows some vocabulary, notations and conventions used in this article.
     We always have \code{(and (subtypep $T$ $T'$) (not (subtypep $T'$ $T$)))}.
 \end{description}
 
+\section{General procedure flow}
+\vref{fig:flow} pictures the internals of our implementation. Every step will be
+detailed in the following sections.
+
+\begin{figure}
+  \centering
+  \begin{tikzpicture}[node distance=5mm,
+    action/.style={rectangle,rounded corners,fill=white,drop shadow=gray,draw=black,font=\small},
+    arrow/.style={->,thick,gray},
+    label/.style={fill=white,text=black,font=\tt\footnotesize},
+    inout/.style={}
+    ]
+    \def\longest{numeric types \then{} ranges}
+
+    \node[action] (largest1) {\longest};
+    \node[action,right=of largest1] (largest2) {\longest};
+    \node[action,above=of largest1] (typexpand1) {alias expansion};
+    \node[action,above=of largest2] (typexpand2) {alias expansion};
+    \node[action,below=of largest1] (split1) {split};
+    \node[action,below=of largest2] (split2) {split};
+    \node[inout,above=of typexpand1] (a) {type $A$};
+    \node[inout,above=of typexpand2] (b) {type $B$};
+    \draw[arrow,opacity=0] (largest1) -- (largest2) node[midway,opacity=0] (middle) {};
+
+    \node[action,below=2 of middle] (andnotL) {\code[\footnotesize]{(and l-t-1 (not l-t-2))}};
+    \node[action,below=of andnotL] (reg) {registration step};
+    \node[action,below=of reg] (bv) {bit-vector computation};
+    \node[action,below=of bv] (nullbv) {= $[0\ 0\ \cdots\ 0]$?};
+
+    \node[action,below=1 of nullbv] (andnotR) {\code[\footnotesize]{(and r-t-1 (not r-t-2))}};
+    \node[action,below=of andnotR] (red) {type diversity reduction};
+    \node[action,below=of red] (canon) {canonicalization};
+    \node[action,below=of canon] (nullin) {= $\emptyset$?};
+
+    \node[action,below=1 of nullin] (conj) {$\bigwedge$};
+    \node[inout,below=of conj] (res) {\texttt{subtypep} result};
+
+
+    \draw[arrow] (a) to (typexpand1);
+    \draw[arrow] (b) to (typexpand2);
+    \draw[arrow] (typexpand1) to (largest1);
+    \draw[arrow] (typexpand2) to (largest2);
+    \draw[arrow] (largest1) to (split1);
+    \draw[arrow] (largest2) to (split2);
+
+    \draw[arrow] (split1) |- (andnotR) node[label,pos=0.25,rotate=90] (rt1) {range-type-1};
+    \draw[arrow] (split2) |- (andnotR) node[label,pos=0.25,rotate=-90] (rt2) {range-type-2};
+    % near start = pos=0.1
+    \draw[arrow] (split1) |- (andnotL) node[label,near start] (lt1) {litteral-type-1};
+    \draw[arrow] (split2) |- (andnotL) node[label,near start] (lt2) {litteral-type-2};
+
+    \draw[arrow] (andnotL) to (reg);
+    \draw[arrow] (reg) to (bv);
+    \draw[arrow] (bv) to (nullbv);
+    \draw[arrow] (andnotR) to (red);
+    \draw[arrow] (red) to (canon);
+    \draw[arrow] (canon) to (nullin);
+
+    \draw[arrow] (nullbv) to [out=180,in=135] (conj);
+    \draw[arrow] (nullin) to [out=0,in=45] (conj);
+    \draw[arrow] (conj) to (res);
+
+  \end{tikzpicture}
+  \caption{Internal flow for \code{(subtypep A B)}}
+  \label{fig:flow}
+\end{figure}
+
+\section{Preprocessing}
+% TODO add MOP bib ref for finalized classes
+
+\section{Procedure for literal types}
+
 \section{Conclusion and Future Work}
-[..]
+[..] (Flow programming @SICP)
 
 Even if, in the future, we are to conclude that our implementation is less
 efficient than those which already exists, Baker's algorithm would still likely to
