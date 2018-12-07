@@ -1,0 +1,174 @@
+\documentclass[format=sigconf]{acmart}
+\usepackage{minted}
+\usepackage{xcolor}
+\usepackage{xspace}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{varioref}
+\usepackage[nameinlink,capitalize]{cleveref}
+\usepackage{tocloft}
+\usepackage{amsthm} % example env
+
+\usemintedstyle{xcode}
+\newminted{cl}{autogobble,breaklines,escapeinside=||,fontsize=\small}
+
+\newcommand\code[1]{\sloppy\texttt{\small #1}}
+\theoremstyle{definition}
+\newtheorem{example}{Example}
+
+
+
+\bibliographystyle{alpha}
+
+\acmConference[ELS'19]{the 19th European Lisp Symposium}{April 01--02 2018}{Genova, Italy}
+\acmISBN{978-2-9557474-2-1}
+\acmDOI{}
+
+\title{Comments on implementing Baker's Common Lisp SUBTYPEP decision procedure}
+
+\author{Léo Valais}
+\email{lvalais@lrde.epita.fr}
+\orcid{0000-0000-0000-0000}
+
+\author{Jim E. Newton}
+\email{jnewton@lrde.epita.fr}
+\orcid{0000-0002-1595-8655}
+
+\author{Didier Verna}
+\email{didier@lrde.epita.fr}
+\orcid{0000-0002-6315-052X}
+
+\affiliation{%
+  \institution{EPITA/LRDE}
+  \streetaddress{14-16 rue Voltaire}
+  \postcode{94270}
+  \city{Le Kremlin-Bic{\^e}tre}
+  \country{France}
+}
+
+\begin{CCSXML}
+  <ccs2012>
+  <concept>
+  <concept_id>10011007.10011006.10011008.10011024.10011028</concept_id>
+  <concept_desc>Software and its engineering~Data types and structures</concept_desc>
+  <concept_significance>500</concept_significance>
+  </concept>
+  <concept>
+  <concept_id>10003752.10003790.10011740</concept_id>
+  <concept_desc>Theory of computation~Type theory</concept_desc>
+  <concept_significance>500</concept_significance>
+  </concept>
+  <concept>
+  <concept_id>10003752.10003809.10010031.10010032</concept_id>
+  <concept_desc>Theory of computation~Pattern matching</concept_desc>
+  <concept_significance>300</concept_significance>
+  </concept>
+  </ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Software and its engineering~Data types and structures}
+\ccsdesc[500]{Theory of computation~Type theory}
+\ccsdesc[300]{Theory of computation~Pattern matching}
+
+
+\newcommand\sbcl{\textsc{Sbcl}}
+
+\begin{document}
+
+
+% \toappear{}
+\begin{abstract}
+  The Common Lisp standard allows the function \code{subtypep} to return
+  the couple of values \code{(nil nil)} when it cannot determine the
+  sub-typing relationship between two types. That permission to fail
+  is granted because the type system allows the usage of the type specifier
+  \code{(satisfies P)} which is understood as the type containing all the
+  elements for which the predicate \code{P} return $\top$. Since \code{subtypep}
+  must not evaluate \code{P}, it cannot answer many interrogations involving
+  such a type specifier---hence the permission to fail. Implementations of the
+  predicate often abuse such permission, making the function both inaccurate and
+  unreliable. That behavior is troublesome for some applications, in particular
+  for the compiler itself which uses \code{subtypep} for optimization purposes.
+  Seeking for precision, H. Baker describes a decision procedure which he claims
+  to be more accurate and efficient than the average implementation.
+  In this article we present our partial implementation of his procedure, detail
+  our understanding of his algorithm, argument in favor or against some of
+  his choices and clarify parts of his description.
+\end{abstract}
+
+\maketitle
+
+\section{Introduction}
+
+\begin{listing}
+\begin{clcode}
+(subtypep '(satisfies F) '(satisfies G))
+;; returns (NIL NIL)
+\end{clcode}
+  \caption{Impossible for \code{subtypep} to answer}
+  \label{lst:satisfies}
+\end{listing}
+
+\begin{listing}
+  \begin{clcode}
+(sb!xc:deftype keyword ()
+  '(and symbol (satisfies keywordp)))
+  \end{clcode}
+  \caption{\code{keyword} type definition in \sbcl}
+  \label{lst:keyword}
+\end{listing}
+
+The Common Lisp standard \cite{bib:ansi.94.cl} provides the predicate function
+\code{subtypep} for
+introspecting the sub-typing relationship. Every invocation \code{(subtypep A B)}
+either returns the values \code{(t t)} when \code{A} is a sub-type of \code{B},
+\code{(nil t)} when not or \code{(nil nil)} meaning the predicate could not
+(or failed to) answer the question. The latter can happen when the type
+specifier \code{(satisfies P)} (representing the type $\{x \mid
+\mathtt{P(x)}\}$ for some predicate and total function\footnote{A function
+  defined over its entire definition domain.} \code{P}) is involved. As shown in
+\vref{lst:satisfies}, there is indeed no way for the function to answer anything
+else than \code{(nil nil)} for any arbitrary predicates \code{F} and \code{G}.
+
+However some implementations abuse of the permission to return \code{(nil nil)}.
+For example, in \sbcl{} (the implementation we are currently focusing our
+efforts on), {\small\code{(satisfies 'boolean 'keyword)}} returns
+\code{(nil nil)}, thus violating the standard\footnote{The Common Lisp standard
+  requires that no invocation of \texttt{subtypep} involving only primitive types
+  returns \texttt{(nil nil)}}. The definition of the \code{keyword} type is
+responsible for the failure: as shown in \vref{lst:keyword}, it
+involves a \code{satisfies} type specifier. Therefore any type-based
+optimization involving determining whether \code{boolean} is a sub-type of
+\code{keyword} is lost.
+
+Another kind of problem for which \code{subtypep}'s accuracy matters is the
+optimization of the \code{typecase} construct as shown in \cite{newton.18.phd}
+and \cite{newton.18.els}.
+\textbf{TODO}
+
+Our implementation is still in active development and currently targets
+\sbcl{} and focuses almost entirely on results accuracy. It supports
+primitive types, user-defined types (\code{deftype}, classes and structures),
+\code{member} (and \code{eql}) type specifiers and ranges (e.g.,
+\code{(integer * 12)}). We will present our strategy for implementing each one
+of these while discussing how and why we decided or not to diverge from Baker's
+\cite{baker1992}
+approach---or potentially filling some gaps or unclear bits.
+No optimization work has been done yet and the implementation still has
+bugs and diverse issues but we have found some encouraging results about
+accuracy and even about efficiency.
+
+\section{Conclusion and Future Work}
+[..]
+
+Even if, in the future, we are to conclude that our implementation is less
+efficient than those which already exists, Baker's algorithm would still likely to
+improve the predicate's accuracy. Users would then have the ability to
+choose whichever \code{subtypep} implementation fits their needs the best.
+
+\bibliography{valais.19.els}
+
+\end{document}

@@ -1,0 +1,110 @@
+@Article{baker1992,
+  author =       {Henry G. Baker},
+  title =        {A {D}ecision {P}rocedure for {C}ommon {L}isp's \texttt{{SUBTYPEP}} {P}redicate},
+  journal =      {Lisp and Symbolic Computation},
+  year =         {1992},
+  OPTkey =       {},
+  OPTvolume =    {5},
+  OPTnumber =    {3},
+  OPTpages =     {157-190},
+  OPTmonth =     {September},
+  OPTnote =      {},
+  OPTannote =    {}
+}
+
+@Misc{bib:ansi.94.cl,
+  author = {{Ansi}},
+  title =  {American {N}ational {S}tandard: {P}rogramming {L}anguage -- {C}ommon {L}isp},
+  howpublished = {ANSI X3.226:1994 (R1999)},
+  year =         {1994}
+}
+
+@Book{paip,
+  author =       {Peter Norvig},
+  title =        {Paradigms of {A}rtificial {I}ntelligence {P}rogramming},
+  publisher =    {Morgan Kaufmann Publishers},
+  year =         {1992}
+}
+
+@InProceedings{newton.18.els,
+  author	= {Jim Newton and Didier Verna},
+  title		= {Approaches in \texttt{typecase} Optimization},
+  booktitle	= {European Lisp Symposium},
+  year		= 2018,
+  address	= {Marbella, Spain},
+  month		= apr,
+  abstract	= {We contrast two approaches to optimizing the Common Lisp
+      typecase macro expansion. The first approach is based on
+      heuristics intended to estimate run time performance of
+      certain type checks involving Common Lisp type specifiers.
+      The technique may, depending on code size, exhaustively
+      search the space of permutations of the type checks, intent
+      on finding the optimal order. With the second technique, we
+      represent a typecase form as a type specifier,
+      encapsulating the side-effecting non-Boolean parts so as to
+      appear compatible with the Common Lisp type algebra
+      operators. The encapsulated expressions are specially
+      handled so that the Common Lisp type algebra functions
+      preserve them, and we can unwrap them after a process of
+      Boolean reduction into efficient Common Lisp code,
+      maintaining the appropriate side effects but eliminating
+      unnecessary type checks. Both approaches allow us to
+      identify unreachable code, test for exhaustiveness of the
+      clauses and eliminate type checks which are calculated to
+      be redundant. }
+}
+@PhDThesis{       newton.18.phd,
+  author        = {Jim Newton},
+  title         = {Representing and Computing with Types in Dynamically Typed Languages},
+  school        = {Sorbonne Universit\'e},
+  year          = 2018,
+  address       = {Paris, France},
+  month         = nov,
+  abstract      = {In this report, we present code generation techniques related to
+run-time type checking of heterogeneous sequences.  Traditional
+regular expressions can
+be used to recognize well defined sets of character strings called
+\textit{rational languages} or sometimes \textit{regular languages}.
+Newton et al. present an extension whereby a
+dynamic programming language may recognize a well defined set of heterogeneous
+sequences, such as lists and vectors.
+
+As with the analogous string matching regular expression theory,
+matching these \textit{regular type expressions} can also be achieved
+by using a finite state machine (deterministic finite automata, DFA).
+Constructing such a DFA can be time consuming.  The approach
+we chose, uses meta-programming to intervene at compile-time,
+generating efficient functions specific to each DFA, and allowing
+the compiler to further optimize the functions if possible.  The
+functions are made available for use at run-time. Without
+this use of meta-programming, the program might otherwise be
+forced to construct the DFA at run-time.  The excessively high cost of
+such a construction would likely far outweigh the time
+needed to match a string against the expression.
+
+Our technique involves hooking into the Common Lisp type system via the
+\texttt{deftype} macro.  The first time the compiler encounters a
+relevant type specifier, the appropriate DFA is created, which may be
+a $\Omega(2^n)$ operation, from which specific low-level code is
+generated to match that specific expression.  Thereafter, when
+the type specifier is encountered again, the same pre-generated
+function can be used.  The code generated is $\Theta(n)$ complexity at
+run-time.
+
+A complication of this approach, which we explain in this report, is
+that to build the DFA we must calculate a disjoint type decomposition
+which is time consuming, and also leads to sub-optimal use of
+\texttt{typecase} in machine generated code.  To handle this complication, we use our own macro
+\texttt{optimized-typecase} in our machine generated code.  Uses of this
+macro are also implicitly expanded at compile time.  Our macro
+expansion uses BDDs (Binary Decision Diagrams) to optimize the \texttt{optimized-typecase} into low
+level code, maintaining the \texttt{typecase} semantics but eliminating
+redundant type checks.  In the report we also describe an extension of
+BDDs to accomodate subtyping in the Common Lisp type system as well as an
+in-depth analysis of worst-case sizes of BDDs.
+},
+  lrdepaper     = {http://www.lrde.epita.fr/dload/papers/newton.2018.phd.pdf},
+  lrdeslides    = {http://www.lrde.epita.fr/dload/papers/newton.2018.phd.slides.pdf},
+  lrdekeywords  = {rational language, automata, lisp, bdd},
+  lrdeprojects  = {Climb}
+}
