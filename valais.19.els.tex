@@ -11,6 +11,7 @@
 \usepackage[nameinlink,capitalize]{cleveref}
 \usepackage{tocloft}
 \usepackage{amsthm} % example env
+\usepackage{enumitem} % description env
 
 \usemintedstyle{xcode}
 \newminted{cl}{autogobble,breaklines,escapeinside=||,fontsize=\small}
@@ -102,25 +103,6 @@
 \maketitle
 
 \section{Introduction}
-
-\begin{listing}
-\begin{clcode}
-(subtypep '(satisfies F) '(satisfies G))
-;; returns (NIL NIL)
-\end{clcode}
-  \caption{Impossible for \code{subtypep} to answer}
-  \label{lst:satisfies}
-\end{listing}
-
-\begin{listing}
-  \begin{clcode}
-(sb!xc:deftype keyword ()
-  '(and symbol (satisfies keywordp)))
-  \end{clcode}
-  \caption{\code{keyword} type definition in \sbcl}
-  \label{lst:keyword}
-\end{listing}
-
 The Common Lisp standard \cite{bib:ansi.94.cl} provides the predicate function
 \code{subtypep} for
 introspecting the sub-typing relationship. Every invocation \code{(subtypep A B)}
@@ -138,7 +120,7 @@ For example, in \sbcl{} (the implementation we are currently focusing our
 efforts on), {\small\code{(satisfies 'boolean 'keyword)}} returns
 \code{(nil nil)}, thus violating the standard\footnote{The Common Lisp standard
   requires that no invocation of \texttt{subtypep} involving only primitive types
-  returns \texttt{(nil nil)}}. The definition of the \code{keyword} type is
+  returns \texttt{(nil nil)}.}. The definition of the \code{keyword} type is
 responsible for the failure: as shown in \vref{lst:keyword}, it
 involves a \code{satisfies} type specifier. Therefore any type-based
 optimization involving determining whether \code{boolean} is a sub-type of
@@ -150,7 +132,7 @@ and \cite{newton.18.els}. The aim is to remove redundant checks in the construct
 and their approach is to use binary decision diagrams. However, to build such a
 structure, \code{subtypep} is repeatedly used. The unreliability of the
 predicate leads here to many lost BDD reductions and therefore to the
-genereation of not optimal code.
+generation of not optimal code.
 
 Our implementation is still in active development, currently targets
 \sbcl{} and focuses almost entirely on results accuracy. It supports
@@ -163,6 +145,137 @@ approach---or potentially filling some gaps or unclear bits.
 No optimization work has been done yet and the implementation still has
 bugs and diverse issues but we have found some encouraging results about
 accuracy and even about efficiency.
+
+\begin{listing}[!p]
+\begin{clcode}
+(subtypep '(satisfies F) '(satisfies G))
+;; returns (NIL NIL)
+\end{clcode}
+  \caption{Impossible for \code{subtypep} to answer}
+  \label{lst:satisfies}
+\end{listing}
+
+\begin{listing}
+  \begin{clcode}
+(sb!xc:deftype keyword ()
+  '(and symbol (satisfies keywordp)))
+  \end{clcode}
+  \caption{The \code{keyword} type definition in \sbcl}
+  \label{lst:keyword}
+\end{listing}
+
+
+\section{The Common Lisp type system}
+\subsection{Type specifiers}
+We can equivalently speak of types and sets and Common Lisp types are no
+exception. They are not manipulated directly. Instead, the type to be
+manipulated is \emph{described} using a \emph{type specifier}.
+The type specifier DSL (Domain-Specific Language) allows the programmer to
+describe types by writing S-expressions which obey some rules described in the
+Common Lisp standard \cite{bib:ansi.94.cl} and roughly summarized by the
+\vref{tab:ts}\footnote{More type specifiers exist. We do not describe them either
+  because they are not implemented or because Baker's procedure ignores them as well.}.
+
+A subtlety about this mechanism is that \emph{different type specifiers} can
+represent the same type (e.g., \code{integer}, \code{(integer * *)} and
+\code{(or fixnum bignum)} all describe the same type). It means that
+\emph{symbolic computation does not suffice} to answer the sub-typing question.
+As shown in \vref{lst:type=}, one could write a predicate, say \code{type=}, to
+determine whether two type specifiers describe in fact the same type using
+\code{subtypep}.
+
+It is possible to define \emph{parametric aliases} using the \code{deftype}
+construct. It is then possible to refer to a whole type specifier using its
+alias. The \vref{lst:deftype} shows an example of \code{deftype}.
+
+\begin{listing}
+\begin{clcode}
+(defun type= (type1 type2)
+  (multiple-value-bind (res1 sure1-p)
+      (subtypep type1 type2)
+    (multiple-value-bind (res2 sure2-p)
+        (subtypep type2 type1)
+      (values (and res1 res2)
+              (and sure1-p sure2-p)))))
+\end{clcode}
+\caption{The predicate \code{type=}}
+\label{lst:type=}
+\end{listing}
+
+\begin{listing}
+\begin{clcode}
+(deftype except (x)
+  `(not (eql ,x)))
+\end{clcode}
+\caption{The \code{deftype} construct}
+\label{lst:deftype}
+\end{listing}
+
+\begin{table*}
+  \centering
+  \newcommand\var[1]{{\color{gray}$#1$}}
+  \newcommand\pat[1]{\texttt{\small #1}}
+  \begin{tabular}{rl|c}
+    \hline
+    Type specifier pattern & Description & Example \\
+    \hline
+    \pat{nil} & The null type $\emptyset$ & --- \\
+    \pat{\var{t}}
+            & A \code{symbol}-designated type & \code{character} \\
+    \pat{(eql \var{e})}
+            & The singleton type $\{e\}$ & \code{(eql 12)} \\
+    \pat{(member \var{e_1} $\cdots$ \var{e_n})}
+            & The type $\{e1, \cdots, e_n\}$ & \code{(member t nil)} \\
+    \pat{(not \var{t})}
+            & The complementary type $\overline{t}$ & \code{(not null)} \\
+    \pat{(or \var{t_1} $\cdots$ \var{t_n})}
+            & The union type $t_1 \cup \cdots \cup t_n$ & \code{(or integer float)} \\
+    \pat{(and \var{t_1} $\cdots$ \var{t_n})}
+            & The intersection type $t_1 \cap \cdots \cap t_n$ & \code{(and symbol (not keyword))} \\
+    \pat{(\var{t} \var{X} \var{Y})}
+            & The range $\{n \in t \mid X \leq n \leq Y\}$ & \code{(integer 1 6)} \\
+    \pat{(\var{t} (\var{X}) \var{Y})}
+            & The range $\{n \in t \mid X < n \leq Y\}$ & \code{(integer (0) 6)} \\
+    \pat{(\var{t} * (\var{Y}))}
+            & The range $\{n \in t \mid n \leq Y\}$ & \code{(integer * (43))} \\
+    \pat{(array \var{t} \var{n})}
+            & $n$-dimensional array of elements of type $t$ & \code{(array integer 1)} \\
+    \pat{(array * (\var{d_1} $\cdots$ \var{d_n}))}
+            & Array with $d_i$ elements on its $i$-th dimension & \code{(array * (3 3))} \\
+    \pat{(array \var{t} (* * *))}
+            & 3-dimensional $t$ array & \code{(array symbol (* * *))} \\
+    \pat{(satisfies \var{p})} & The type $\{x \mid p(x)\}$ & \code{(satisfies oddp)} \\
+    \hline
+  \end{tabular}
+  \caption{Brief summary of the type specifier DSL features}
+  \label{tab:ts}
+\end{table*}
+
+\subsection{Vocabulary}
+Follows some vocabulary, notations and conventions used in this article.
+
+\begin{description}[leftmargin=8em,style=nextline]
+  \item[type] For any type $t$: $t \equiv \{x \mid x\!:\!t\}$
+  \item[canonical t.s.] A type specifier without aliases.
+  \item[primitive type] A standardized type that is not necessarily
+    implemented as a class.
+  \item[symbolic form] A type specifier which type is \code{symbol}.
+  \item[compound form] A type specifier which type is \code{list}.
+  \item[literal type] A type specifier that only contains symbolic types,
+    \code{member} types and logic compound forms.
+  \item[range] A valid type specifier that consist of a single range.
+  \item[interval] A mathematical interval that may not be a valid type specifier.
+  \item[range type] A type specifier that only contains ranges and logic compound forms.
+
+  \item[type $\neq$ t.s.] When no confusion is possible we take the right to
+    write type specifiers where a mathematical type is expected and to use a type
+    variable, say $T$, as a placeholder inside Lisp code for \emph{a type
+      specifier of} $T$.
+  \item[$T \subseteq T'$] The \emph{type} $T$ is a non-strict sub-type of $T'$.
+    We always have \code{(subtypep $T$ $T'$)}.
+  \item[$T \subset T'$] The \emph{type} $T$ is a strict sub-type of $T'$.
+    We always have \code{(and (subtypep $T$ $T'$) (not (subtypep $T'$ $T$)))}.
+\end{description}
 
 \section{Conclusion and Future Work}
 [..]
