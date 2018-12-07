@@ -287,9 +287,10 @@ detailed in the following sections.
 \begin{figure}
   \centering
   \begin{tikzpicture}[node distance=5mm,
-    action/.style={rectangle,rounded corners,fill=white,drop shadow=gray,draw=black,font=\small},
+    action/.style={rectangle,rounded corners,fill=white,drop shadow=gray!75,draw=black!65,fill=gray!2,font=\footnotesize},
+    andnot/.style={action,font=\scriptsize\tt},
     arrow/.style={->,thick,gray},
-    label/.style={fill=white,text=black,font=\tt\footnotesize},
+    label/.style={fill=white,text=black,font=\tt\scriptsize},
     inout/.style={}
     ]
     \def\longest{numeric types \then{} ranges}
@@ -304,12 +305,12 @@ detailed in the following sections.
     \node[inout,above=of typexpand2] (b) {type $B$};
     \draw[arrow,opacity=0] (largest1) -- (largest2) node[midway,opacity=0] (middle) {};
 
-    \node[action,below=2 of middle] (andnotL) {\code[\footnotesize]{(and l-t-1 (not l-t-2))}};
+    \node[andnot,below=2 of middle] (andnotL) {(and l-t-1 (not l-t-2))};
     \node[action,below=of andnotL] (reg) {registration step};
     \node[action,below=of reg] (bv) {bit-vector computation};
     \node[action,below=of bv] (nullbv) {= $[0\ 0\ \cdots\ 0]$?};
 
-    \node[action,below=1 of nullbv] (andnotR) {\code[\footnotesize]{(and r-t-1 (not r-t-2))}};
+    \node[andnot,below=1 of nullbv] (andnotR) {(and r-t-1 (not r-t-2))};
     \node[action,below=of andnotR] (red) {type diversity reduction};
     \node[action,below=of red] (canon) {canonicalization};
     \node[action,below=of canon] (nullin) {= $\emptyset$?};
@@ -325,8 +326,8 @@ detailed in the following sections.
     \draw[arrow] (largest1) to (split1);
     \draw[arrow] (largest2) to (split2);
 
-    \draw[arrow] (split1) |- (andnotR) node[label,pos=0.25,rotate=90] (rt1) {range-type-1};
-    \draw[arrow] (split2) |- (andnotR) node[label,pos=0.25,rotate=-90] (rt2) {range-type-2};
+    \draw[arrow] (split1) to [out=245,in=180] (andnotR);
+    \draw[arrow] (split2) to [out=295,in=0] (andnotR);
     % near start = pos=0.1
     \draw[arrow] (split1) |- (andnotL) node[label,near start] (lt1) {litteral-type-1};
     \draw[arrow] (split2) |- (andnotL) node[label,near start] (lt2) {litteral-type-2};
@@ -341,6 +342,10 @@ detailed in the following sections.
     \draw[arrow] (nullbv) to [out=180,in=135] (conj);
     \draw[arrow] (nullin) to [out=0,in=45] (conj);
     \draw[arrow] (conj) to (res);
+
+    % tricky labels to place
+    \node[label,left=.41 of andnotR,rotate=-50] (rt1) {range-type-1};
+    \node[label,right=.41 of andnotR,rotate=50] (rt2) {range-type-2};
 
   \end{tikzpicture}
   \caption{Internal flow for \code{(subtypep A B)}}
