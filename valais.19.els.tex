@@ -17,7 +17,7 @@
 \usemintedstyle{xcode}
 \newminted{cl}{autogobble,breaklines,escapeinside=||,fontsize=\small}
 
-\newcommand\code[2][\small]{\sloppy\texttt{#1 #2}}
+\newcommand\code[2][\small]{\sloppy\texttt{#1#2}}
 \theoremstyle{definition}
 \newtheorem{example}{Example}
 
@@ -135,7 +135,7 @@ and \cite{newton.18.els}. The aim is to remove redundant checks in the construct
 and their approach is to use binary decision diagrams. However, to build such a
 structure, \code{subtypep} is repeatedly used. The unreliability of the
 predicate leads here to many lost BDD reductions and therefore to the
-generation of not optimal code.
+generation of sub-optimal code.
 
 Our implementation is still in active development, currently targets
 \sbcl{} and focuses almost entirely on results accuracy. It supports
@@ -189,7 +189,7 @@ determine whether two type specifiers describe in fact the same type using
 
 It is possible to define \emph{parametric aliases} using the \code{deftype}
 construct. It is then possible to refer to a whole type specifier using its
-alias. The \vref{lst:deftype} shows an example of \code{deftype}.
+alias. The \vref{lst:deftype} shows an example of parametric \code{deftype}.
 
 \begin{listing}
 \begin{clcode}
@@ -244,7 +244,7 @@ alias. The \vref{lst:deftype} shows an example of \code{deftype}.
     \pat{(array \var{t} \var{n})}
             & $n$-dimensional array of elements of type $t$ & \code{(array integer 1)} \\
     \pat{(array * (\var{d_1} $\cdots$ \var{d_n}))}
-            & Array with $d_i$ elements on its $i$-th dimension & \code{(array * (3 3))} \\
+            & Array with $d_i$ elements in its $i$-th dimension & \code{(array * (3 3))} \\
     \pat{(array \var{t} (* * *))}
             & 3-dimensional $t$ array & \code{(array symbol (* * *))} \\
     \pat{(satisfies \var{p})} & The type $\{x \mid p(x)\}$ & \code{(satisfies oddp)} \\
@@ -264,16 +264,16 @@ Follows some vocabulary, notations and conventions used in this article.
     implemented as a class.
   \item[symbolic form] A type specifier which type is \code{symbol}.
   \item[compound form] A type specifier which type is \code{list}.
+  \item[logic type] A toplevel union, intersection or complement.
   \item[literal type] A type specifier that only contains symbolic types,
     \code{member} types and logic compound forms.
-  \item[range] A valid type specifier that consist of a single range.
   \item[interval] A mathematical interval that may not be a valid type specifier.
   \item[range type] A type specifier that only contains ranges and logic compound forms.
 
-  \item[type $\neq$ t.s.] When no confusion is possible we take the right to
+  \item[type $\approx$ t.s.] When no confusion is possible we take the right to
     write type specifiers where a mathematical type is expected and to use a type
     variable, say $T$, as a placeholder inside Lisp code for \emph{a type
-      specifier of} $T$.
+      specifier describing} $T$.
   \item[$T \subseteq T'$] The \emph{type} $T$ is a non-strict sub-type of $T'$.
     We always have \code{(subtypep $T$ $T'$)}.
   \item[$T \subset T'$] The \emph{type} $T$ is a strict sub-type of $T'$.
@@ -282,7 +282,40 @@ Follows some vocabulary, notations and conventions used in this article.
 
 \section{General procedure flow}
 \vref{fig:flow} pictures the internals of our implementation. Every step will be
-detailed in the following sections.
+detailed in the following sections. There is three \emph{major stages}:
+
+\begin{enumerate}
+\item \emph{The preprocessing} --- Both type specifiers are processed in order to
+  simplify further calculations: the aliases are expanded, each occurrence of
+  numeric types are converted to their equivalent range type specifier and the
+  type specifier is finally splitted. This stage is detailed in % section
+  \vref{sec:pre}.
+\item \emph{Expert sub-procedures} --- Once splitted, each sub-type specifier is
+  redirected to the appropriate expert sub-procedure. Such procedures' job is to
+  determine, in its own \emph{kingdom} in Baker's terminology, whether or not it
+  can \emph{prove} the assertion ``$A$ is a sub-type of $B$''to be \emph{wrong}.
+  Our procedures currently only supports literal and range type specifers---an
+  expert sub-procedure has been implemented only for these two kingdoms. This
+  stage is detailed in \vref{sec:exp}.
+\item \emph{Result accumulation} --- Eventually, all expert sub-procedures
+  return (a boolean) and the results are accumulated using conjunction
+  (the \code{and} function). From a top-down point of view, the \code{subtypep}
+  function could be implemented as shown in \vref{lst:tdstp}.
+\end{enumerate}
+
+\begin{listing}
+\begin{clcode}
+(defun subtypep (a b)
+  (reduce (lambda (x y) (and x y))
+          (mapcar (lambda (expert t1 t2)
+                    (funcall expert t1 t2))
+                  (list #'literal-sub-proc #'range-sub-proc)
+                  (split (num-types->ranges (expand a)))
+                  (split (num-types->ranges (expand b))))))
+\end{clcode}
+\caption{A top-down definition of \code{subtypep}}
+\label{lst:tdstp}
+\end{listing}
 
 \begin{figure}
   \centering
@@ -306,7 +339,7 @@ detailed in the following sections.
     \draw[arrow,opacity=0] (largest1) -- (largest2) node[midway,opacity=0] (middle) {};
 
     \node[andnot,below=2 of middle] (andnotL) {(and l-t-1 (not l-t-2))};
-    \node[action,below=of andnotL] (reg) {registration step};
+    \node[action,below=of andnotL] (reg) {missing types registration};
     \node[action,below=of reg] (bv) {bit-vector computation};
     \node[action,below=of bv] (nullbv) {= $[0\ 0\ \cdots\ 0]$?};
 
@@ -346,14 +379,17 @@ detailed in the following sections.
     % tricky labels to place
     \node[label,left=.41 of andnotR,rotate=-50] (rt1) {range-type-1};
     \node[label,right=.41 of andnotR,rotate=50] (rt2) {range-type-2};
-
   \end{tikzpicture}
   \caption{Internal flow for \code{(subtypep A B)}}
   \label{fig:flow}
 \end{figure}
 
 \section{Preprocessing}
+\label{sec:pre}
 % TODO add MOP bib ref for finalized classes
+
+\section{Expert sub-procedures}
+\label{sec:exp}
 
 \section{Procedure for literal types}
 
