@@ -281,6 +281,7 @@ Follows some vocabulary, notations and conventions used in this article.
 \end{description}
 
 \section{General procedure flow}
+\label{sec:flow}
 \vref{fig:flow} pictures the internals of our implementation. Every step will be
 detailed in the following sections. There is three \emph{major stages}:
 
@@ -378,6 +379,49 @@ result of an expansion may itself be an alias to expand\footnote{Fortunately,
 %   \caption{\code{specifier-type} weight in \code{subtypep} execution}
 %   \label{fig:stEQstp}
 % \end{figure}
+
+\subsection{Numeric type specifiers conversion}
+As explained in \vref{sec:flow}, after preprocessing both type specifiers, the
+procedure splits in two expert sub-procedures: one for literal type specifiers
+and one for range type specifiers, because their internal representation differ.
+Numeric types---types containing numbers (mathematically speaking)---can have
+different representations: a \emph{symbol} (e.g., \code{fixnum}), a \emph{range}
+(e.g., \code{(integer 1 6)}) or a \emph{\code{member} expression}
+(e.g., \code{(member 1 2 3)}). However, the first two are literal where le
+latter is a range. Thus, the numerical type information would be distributed in
+the different expert sub-procedures (which does not share any data). For
+concistency's sake and to obtain accurate results, a single internal
+representation should be chosen. The symbolic and \code{member} numeric types
+must then be converted into an equivalent type specifier involving only ranges
+to describe numerical data.
+
+To convert a symbolic numeric type specifier, say \code{U}, replace it by
+\code{(U * *)}\footnote{Implementations supporting the IEEE floating point
+  raise many concerns with -0.0, NaN, $+\infty$ and $-\infty$. Baker explains
+  in detail how to handle these cases, which our implementation does not support
+  yet.}. Note the hereby new ``type specifier'' is likely \emph{not} to
+be valid (e.g., \code{(fixnum * *)} is invalid).
+
+\code{member} type specifiers are easier to convert.
+\begin{enumerate}
+\item Extract the numbers out of the expression.
+\item Map each number, say $n$, to construct the type specifier
+  \code{((type-of $n$) $n$ $n$)}\footnote{\code[\scriptsize]{type-of} sometimes
+    returns a list which \code[\scriptsize]{car} is the desired type of the
+    range.}.
+\item Combine the remaining \code{member} expression and the ranges with the
+  \code{or} logic type specifier.
+\item E.g., \code{(member a 1 2 :b)} is converted to
+  \code{(or (member a :b) (bit 1 1) (integer 2 2))}.
+\end{enumerate}
+
+% TODO perhaps give an rte expression of what the member type should
+% look like
+% \begin{itemize}
+% \item \emph{A symbol} --- E.g., \code{fixnum}
+% \item \emph{A range} --- E.g., \code{(integer 1 6)}
+% \item \emph{A \code{member} expression} --- E.g., \code{(member 1 2 3)}
+% \end{itemize}
 
 \section{Expert sub-procedures}
 \label{sec:exp}
