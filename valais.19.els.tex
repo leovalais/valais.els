@@ -228,9 +228,9 @@ alias. The \vref{lst:deftype} shows an example of parametric \code{deftype}.
     \pat{(eql \var{e})}
             & The singleton type $\{e\}$ & \code{(eql 12)} \\
     \pat{(member \var{e_1} $\cdots$ \var{e_n})}
-            & The type $\{e1, \cdots, e_n\}$ & \code{(member t nil)} \\
+            & The type $\{e_1, \cdots, e_n\}$ & \code{(member t nil)} \\
     \pat{(not \var{t})}
-            & The complementary type $\overline{t}$ & \code{(not null)} \\
+            & The complement type $\overline{t}$ & \code{(not null)} \\
     \pat{(or \var{t_1} $\cdots$ \var{t_n})}
             & The union type $t_1 \cup \cdots \cup t_n$ & \code{(or integer float)} \\
     \pat{(and \var{t_1} $\cdots$ \var{t_n})}
@@ -293,14 +293,14 @@ detailed in the following sections. There is three \emph{major stages}:
 \item \emph{Expert sub-procedures} --- Once splitted, each sub-type specifier is
   redirected to the appropriate expert sub-procedure. Such procedures' job is to
   determine, in its own \emph{kingdom} in Baker's terminology, whether or not it
-  can \emph{prove} the assertion ``$A$ is a sub-type of $B$''to be \emph{wrong}.
+  can \emph{prove} the assertion ``$A$ is a sub-type of $B$'' to be \emph{wrong}.
   Our procedures currently only supports literal and range type specifers---an
   expert sub-procedure has been implemented only for these two kingdoms. This
   stage is detailed in \vref{sec:exp}.
 \item \emph{Result accumulation} --- Eventually, all expert sub-procedures
-  return (a boolean) and the results are accumulated using conjunction
-  (the \code{and} function). From a top-down point of view, the \code{subtypep}
-  function could be implemented as shown in \vref{lst:tdstp}.
+  return (a boolean) and the results are accumulated using conjunction.
+  From a top-down point of view, the \code{subtypep} function could be
+  implemented as shown in \vref{lst:tdstp}.
 \end{enumerate}
 
 \begin{listing}
@@ -313,20 +313,68 @@ detailed in the following sections. There is three \emph{major stages}:
                   (split (num-types->ranges (expand a)))
                   (split (num-types->ranges (expand b))))))
 \end{clcode}
-\caption{A top-down definition of \code{subtypep}}
+\caption{A top-down approach of \code{subtypep}}
 \label{lst:tdstp}
 \end{listing}
 
 \begin{figure}
   \centering
-  \input{assets/19.flow}
+  \input{assets/19/flow}
   \caption{Internal flow for \code{(subtypep A B)}}
   \label{fig:flow}
 \end{figure}
 
 \section{Preprocessing}
 \label{sec:pre}
+% Both \code{subtypep} parameters are first pre-processed independently.
 % TODO add MOP bib ref for finalized classes
+\subsection{Alias expansion}
+The very first step is to ensure that the type specifier is in its
+\emph{canonical form}, that is, having all its aliases expanded. For example,
+considering the type created in \vref{lst:deftype},
+\code{(expand '(except 12))} should return \code{(not (eql 12))}.
+
+Unlike for the macro expansion, the \code{deftype} expansion is not
+standardized. Thus a solution must be found for each implementation
+independantly. As our efforts are focused on \sbcl{} (yet), we discuss how we
+implement the \code{expand} function for that compiler.
+
+\sbcl's \code{subtypep} heavily relies on the function
+\code{sb-kernel:specifier-type}, which also does type expansion. It also does
+type simplification---turning \code{(and integer string)} into
+\code{nil}---which could have saved us some work. We hoped we could simplify
+that function to make it compatible with Baker's algorithm while keeping the
+\code{deftype} expansion and the range canonicalization work. However we found,
+thanks to \cite{newton.18.phd} tools, that the function is responsible for most
+of the work of \code{subtypep}, as shown in \vref{fig:stGTstp} and \vref{fig:stEQstp}.
+Considering the lack of efficiency of that function and the fact that it would
+not be trivial to simplify it to only keep the interresting bits, we decided to
+keep another, more cost-effective solution.
+
+The function \code{sb-ext:typexpand} takes a type specfier and tries to expand
+it (not recursively) and either returns the expansion result or the input type
+specifier if it is not expandable. \code{(sb-ext:typexpand 'integer)} returns
+\code{integer} since it is not a \code{deftype} alias whereas
+\code{(sb-ext:typexpand '(except 12))} returns \code{(not (eql 12))}.
+To expand a whole type specifier, it just needs to go through it, applying
+\code{sb-ext:typexpand} on each list or atom. One subtlety though is that the
+result of an expansion may itself be an alias to expand\footnote{Fortunately,
+  \code[\scriptsize]{sb-ext:typexpand} also returns a boolean
+  indicating whether or not an expansion happened.}.
+
+\newcommand\ststpscale{0.5}
+\begin{figure}
+  \centering
+  \includegraphics[scale=\ststpscale]{assets/19/stGTstp}
+  \caption{\code{specifier-type} weight in \code{subtypep} execution}
+  \label{fig:stGTstp}
+\end{figure}
+\begin{figure}
+  \centering
+  \includegraphics[scale=\ststpscale]{assets/19/stEQstp}
+  \caption{\code{specifier-type} weight in \code{subtypep} execution}
+  \label{fig:stEQstp}
+\end{figure}
 
 \section{Expert sub-procedures}
 \label{sec:exp}
@@ -341,6 +389,6 @@ efficient than those which already exists, Baker's algorithm would still likely 
 improve the predicate's accuracy. Users would then have the ability to
 choose whichever \code{subtypep} implementation fits their needs the best.
 
-\bibliography{valais.19.els}
+\bibliography{common}
 
 \end{document}
