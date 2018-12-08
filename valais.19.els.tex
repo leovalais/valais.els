@@ -346,7 +346,7 @@ type simplification---turning \code{(and integer string)} into
 that function to make it compatible with Baker's algorithm while keeping the
 \code{deftype} expansion and the range canonicalization work. However we found,
 thanks to \cite{newton.18.phd} tools, that the function is responsible for most
-of the work of \code{subtypep}, as shown in \vref{fig:stGTstp} and \vref{fig:stEQstp}.
+of the work of \code{subtypep}, as shown in \vref{fig:specifiertype}. %\vref{fig:stGTstp} and \vref{fig:stEQstp}.
 Considering the lack of efficiency of that function and the fact that it would
 not be trivial to simplify it to only keep the interresting bits, we decided to
 keep another, more cost-effective solution.
@@ -366,15 +366,18 @@ result of an expansion may itself be an alias to expand\footnote{Fortunately,
 \begin{figure}
   \centering
   \includegraphics[scale=\ststpscale]{assets/19/stGTstp}
-  \caption{\code{specifier-type} weight in \code{subtypep} execution}
-  \label{fig:stGTstp}
-\end{figure}
-\begin{figure}
-  \centering
   \includegraphics[scale=\ststpscale]{assets/19/stEQstp}
   \caption{\code{specifier-type} weight in \code{subtypep} execution}
-  \label{fig:stEQstp}
+  \label{fig:specifiertype}
+  % \label{fig:stGTstp}
 \end{figure}
+%% NOTE perhaps separate the images in two distinct figures
+% \begin{figure}
+%   \centering
+%   \includegraphics[scale=\ststpscale]{assets/19/stEQstp}
+%   \caption{\code{specifier-type} weight in \code{subtypep} execution}
+%   \label{fig:stEQstp}
+% \end{figure}
 
 \section{Expert sub-procedures}
 \label{sec:exp}
