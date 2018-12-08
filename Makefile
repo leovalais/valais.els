@@ -14,6 +14,6 @@ view:
 	zsh -c 'evince valais.19.els.pdf &!'
 
 clean:
-	$(RM) *.aux *.bbl *.blg *.log *.out *.pdf *.pyg
+	$(RM) *.aux *.bbl *.blg *.log *.out *.pdf *.pyg *.xcp *.dvi
 	$(RM) -r _minted-valais.19.els
 	$(RM) -r auto assets/19/auto
