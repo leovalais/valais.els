@@ -240,7 +240,7 @@ alias. The \vref{lst:deftype} shows an example of parametric \code{deftype}.
     \pat{(\var{t} (\var{X}) \var{Y})}
             & The range $\{n \in t \mid X < n \leq Y\}$ & \code{(integer (0) 6)} \\
     \pat{(\var{t} * (\var{Y}))}
-            & The range $\{n \in t \mid n \leq Y\}$ & \code{(integer * (43))} \\
+            & The range $\{n \in t \mid n < Y\}$ & \code{(integer * (43))} \\
     \pat{(array \var{t} \var{n})}
             & $n$-dimensional array of elements of type $t$ & \code{(array integer 1)} \\
     \pat{(array * (\var{d_1} $\cdots$ \var{d_n}))}
