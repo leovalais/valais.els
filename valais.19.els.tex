@@ -18,6 +18,8 @@
 \newminted{cl}{autogobble,breaklines,escapeinside=||,fontsize=\small}
 
 \newcommand\code[2][\small]{\sloppy\texttt{#1#2}}
+\newcommand\footcode[1]{\code[\scriptsize]{#1}}
+
 \theoremstyle{definition}
 \newtheorem{example}{Example}
 
@@ -89,7 +91,7 @@
   the couple of values \code{(nil nil)} when it cannot determine the
   sub-typing relationship between two types. That permission to fail
   is granted because the type system allows the usage of the type specifier
-  \code{(satisfies P)} which is understood as the type containing all the
+  \code{(satisfies P)}, understood as the type containing all the
   elements for which the predicate \code{P} return $\top$. Since \code{subtypep}
   must not evaluate \code{P}, it cannot answer many interrogations involving
   such a type specifier---hence the permission to fail. Implementations of the
@@ -122,8 +124,8 @@ However some implementations abuse of the permission to return \code{(nil nil)}.
 For example, in \sbcl{} (the implementation we are currently focusing our
 efforts on), {\small\code{(satisfies 'boolean 'keyword)}} returns
 \code{(nil nil)}, thus violating the standard\footnote{The Common Lisp standard
-  requires that no invocation of \texttt{subtypep} involving only primitive types
-  returns \texttt{(nil nil)}.}. The definition of the \code{keyword} type is
+  requires that no invocation of \footcode{subtypep} involving only primitive types
+  returns \footcode{(nil nil)}.}. The definition of the \code{keyword} type is
 responsible for the failure: as shown in \vref{lst:keyword}, it
 involves a \code{satisfies} type specifier. Therefore any type-based
 optimization involving determining whether \code{boolean} is a sub-type of
@@ -321,7 +323,7 @@ detailed in the following sections. There is three \emph{major stages}:
 \begin{figure}
   \centering
   \input{assets/19/flow}
-  \caption{Internal flow for \code{(subtypep A B)}}
+  \caption{Internal flow for \code{(subtypep $A$ $B$)}}
   \label{fig:flow}
 \end{figure}
 
@@ -341,16 +343,19 @@ independantly. As our efforts are focused on \sbcl{} (yet), we discuss how we
 implement the \code{expand} function for that compiler.
 
 \sbcl's \code{subtypep} heavily relies on the function
-\code{sb-kernel:specifier-type}, which also does type expansion. It also does
+\code{sb-kernel:specifier-type}, which does type expansion. It also does
 type simplification---turning \code{(and integer string)} into
 \code{nil}---which could have saved us some work. We hoped we could simplify
 that function to make it compatible with Baker's algorithm while keeping the
 \code{deftype} expansion and the range canonicalization work. However we found,
 thanks to \cite{newton.18.phd} tools, that the function is responsible for most
-of the work of \code{subtypep}, as shown in \vref{fig:specifiertype}. %\vref{fig:stGTstp} and \vref{fig:stEQstp}.
+of the work of \code{subtypep}, as shown in \vref{fig:specifiertype}
+\footnote{The \footcode{cached-subtypep-caching-call} is just a memoizing wrapper
+  around \sbcl's \footcode{subtypep} which is a bit more efficient than the raw
+  implementation}.
 Considering the lack of efficiency of that function and the fact that it would
 not be trivial to simplify it to only keep the interresting bits, we decided to
-keep another, more cost-effective solution.
+stick to another, more cost-effective solution.
 
 The function \code{sb-ext:typexpand} takes a type specfier and tries to expand
 it (not recursively) and either returns the expansion result or the input type
@@ -360,8 +365,8 @@ specifier if it is not expandable. \code{(sb-ext:typexpand 'integer)} returns
 To expand a whole type specifier, it just needs to go through it, applying
 \code{sb-ext:typexpand} on each list or atom. One subtlety though is that the
 result of an expansion may itself be an alias to expand\footnote{Fortunately,
-  \code[\scriptsize]{sb-ext:typexpand} also returns a boolean
-  indicating whether or not an expansion happened.}.
+  \footcode{sb-ext:typexpand} also returns a boolean indicating whether or not
+  an expansion happened.}.
 
 \newcommand\ststpscale{0.5}
 \begin{figure}
@@ -397,31 +402,32 @@ to describe numerical data.
 
 To convert a symbolic numeric type specifier, say \code{U}, replace it by
 \code{(U * *)}\footnote{Implementations supporting the IEEE floating point
-  raise many concerns with -0.0, NaN, $+\infty$ and $-\infty$. Baker explains
-  in detail how to handle these cases, which our implementation does not support
-  yet.}. Note the hereby new ``type specifier'' is likely \emph{not} to
-be valid (e.g., \code{(fixnum * *)} is invalid).
+  raise many concerns with \footcode{-0.0}, $NaN$, $+\infty$ and $-\infty$.
+  Baker explains in detail how to handle these cases, which our implementation
+  (FIXME is that assertion totally true?)
+  does not support yet.}. Note the new ``type specifier'' is likely
+\emph{not} to be valid (e.g., \code{(fixnum * *)} is invalid).
 
 \code{member} type specifiers are easier to convert.
 \begin{enumerate}
 \item Extract the numbers out of the expression.
 \item Map each number, say $n$, to construct the type specifier
-  \code{((type-of $n$) $n$ $n$)}\footnote{\code[\scriptsize]{type-of} sometimes
-    returns a list which \code[\scriptsize]{car} is the desired type of the
-    range.}.
+  \code{((type-of $n$) $n$ $n$)}\footnote{\footcode{type-of} sometimes
+    returns a list which \footcode{car} is the type of the range.}.
 \item Combine the remaining \code{member} expression and the ranges with the
   \code{or} logic type specifier.
 \item E.g., \code{(member a 1 2 :b)} is converted to
   \code{(or (member a :b) (bit 1 1) (integer 2 2))}.
 \end{enumerate}
 
-% TODO perhaps give an rte expression of what the member type should
-% look like
-% \begin{itemize}
-% \item \emph{A symbol} --- E.g., \code{fixnum}
-% \item \emph{A range} --- E.g., \code{(integer 1 6)}
-% \item \emph{A \code{member} expression} --- E.g., \code{(member 1 2 3)}
-% \end{itemize}
+\subsection{Splitting}
+Reached this step, the input only contains \emph{canonical} \emph{literal} and
+\emph{range} type specifiers and numeric types are \emph{only} expressed as
+ranges. The next stage---expert sub-procedures---requires literal and range type
+specifiers to be separated. It is the purpose of this step.
+
+To separate literal and numeric type specifiers
+
 
 \section{Expert sub-procedures}
 \label{sec:exp}
@@ -436,6 +442,7 @@ efficient than those which already exists, Baker's algorithm would still likely 
 improve the predicate's accuracy. Users would then have the ability to
 choose whichever \code{subtypep} implementation fits their needs the best.
 
+% Speak about https://lists.gnu.org/archive/html/gcl-devel/2005-07/msg00038.html
 \bibliography{common}
 
 \end{document}
