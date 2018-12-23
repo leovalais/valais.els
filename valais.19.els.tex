@@ -416,9 +416,21 @@ To convert a symbolic numeric type specifier, say \code{U}, replace it by
     returns a list which \footcode{car} is the type of the range.}.
 \item Combine the remaining \code{member} expression and the ranges with the
   \code{or} logic type specifier.
-\item E.g., \code{(member a 1 2 :b)} is converted to
-  \code{(or (member a :b) (bit 1 1) (integer 2 2))}.
 \end{enumerate}
+For example, \code{(member a 1 2 :b)} is converted to
+\code{(or (member a :b) (bit 1 1) (integer 2 2))}.
+
+A final subtlety is that \textit{super-types} of \code{number} also contain
+numerical data that must be extracted. Indeed, the type specifier \code{atom}
+contains both numerical data---\code{(number * *)}---and non-numerical
+data---\code{(and atom (not (number * *)))}. Unfortunately the latter
+expression cannot be used since it uses the \code{atom} type specifier and
+recursively converting that replacement would result in a infinite computation
+loop. Thus \code{atom} must first be replaced by its sum type representation,
+that is \code{(or stream array character function standard-object symbol
+structure-object structure-class (number * *))} before being recursively
+converted. Similarly, the other super-type of \code{number}, the type \code{t}
+must be replaced by \code{(or atom sequence)}.
 
 \subsection{Splitting}
 Reached this step, the input only contains \emph{canonical} \emph{literal} and
