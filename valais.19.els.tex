@@ -395,42 +395,49 @@ different representations: a \emph{symbol} (e.g., \code{fixnum}), a \emph{range}
 (e.g., \code{(member 1 2 3)}). However, the first two are literal where le
 latter is a range. Thus, the numerical type information would be distributed in
 the different expert sub-procedures (which does not share any data). For
-concistency's sake and to obtain accurate results, a single internal
+consistency's sake and to obtain accurate results, a single internal
 representation should be chosen. The symbolic and \code{member} numeric types
 must then be converted into an equivalent type specifier involving only ranges
 to describe numerical data.
 
-To convert a symbolic numeric type specifier, say \code{U}, replace it by
-\code{(U * *)}\footnote{Implementations supporting the IEEE floating point
-  raise many concerns with \footcode{-0.0}, $NaN$, $+\infty$ and $-\infty$.
-  Baker explains in detail how to handle these cases, which our implementation
-  (FIXME is that assertion totally true?)
-  does not support yet.}. Note the new ``type specifier'' is likely
-\emph{not} to be valid (e.g., \code{(fixnum * *)} is invalid).
+\begin{itemize}
+\item \emph{Symbolic} numeric type specifier --- say \code{U}, replace it by
+  \code{(U * *)}\footnote{Implementations supporting the IEEE floating point
+    raise many concerns with \footcode{-0.0}, $NaN$, $+\infty$ and $-\infty$.
+    Baker explains in detail how to handle these cases, which our implementation
+    (FIXME is that assertion totally true?)
+    does not support yet.}. Note the new ``type specifier'' is likely
+  \emph{not} to be valid (e.g., \code{(fixnum * *)} is invalid).
+\item \code{member} type specifiers --- e.g., \code{(member a 1 2 :b)} is
+  converted to \code{(or (member a :b) (bit 1 1) (integer 2 2))}.
+  To do that,
+  \begin{enumerate}
+  \item extract the numbers out of the expression,
+  \item map each number, say $n$, to construct the type specifier
+    \code{((type-of $n$) $n$ $n$)}\footnote{\footcode{type-of} sometimes
+      returns a list which \footcode{car} is the type of the range.},
+  \item and combine the remaining \code{member} expression and the ranges with
+    the \code{or} logic type specifier.
+  \end{enumerate}
+\end{itemize}
 
-\code{member} type specifiers are easier to convert.
-\begin{enumerate}
-\item Extract the numbers out of the expression.
-\item Map each number, say $n$, to construct the type specifier
-  \code{((type-of $n$) $n$ $n$)}\footnote{\footcode{type-of} sometimes
-    returns a list which \footcode{car} is the type of the range.}.
-\item Combine the remaining \code{member} expression and the ranges with the
-  \code{or} logic type specifier.
-\end{enumerate}
-For example, \code{(member a 1 2 :b)} is converted to
-\code{(or (member a :b) (bit 1 1) (integer 2 2))}.
-
-A final subtlety is that \textit{super-types} of \code{number} also contain
-numerical data that must be extracted. Indeed, the type specifier \code{atom}
-contains both numerical data---\code{(number * *)}---and non-numerical
+A subtlety to consider is that \textit{super-types} of \code{number} also
+contain numerical data that must be extracted. Indeed, the type specifier
+\code{atom} contains both numerical data---\code{(number * *)}---and non-numerical
 data---\code{(and atom (not (number * *)))}. Unfortunately the latter
 expression cannot be used since it uses the \code{atom} type specifier and
 recursively converting that replacement would result in a infinite computation
 loop. Thus \code{atom} must first be replaced by its sum type representation,
 that is \code{(or stream array character function standard-object symbol
-structure-object structure-class (number * *))} before being recursively
+  structure-object structure-class (number * *))} before being recursively
 converted. Similarly, the other super-type of \code{number}, the type \code{t}
 must be replaced by \code{(or atom sequence)}.
+
+Yet another subtlety is that the type specifiers \code{(and)} and
+\code{(or)} respectively describe the types \code{t} and \code{nil}. Hence
+every occurrence of \code{(and)} must be replaced by the replacement of
+\code{t} described in the last paragraph. (For consistency's sake, \code{(or)}
+is also replaced even though it is not strictly necessary.)
 
 \subsection{Splitting}
 Reached this step, the input only contains \emph{canonical} \emph{literal} and
