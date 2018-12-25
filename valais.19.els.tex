@@ -7,7 +7,8 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{graphicx}
-\usepackage{varioref}
+\usepackage{varioref}   %
+\usepackage{hyperref}
 \usepackage[nameinlink,capitalize]{cleveref}
 \usepackage{tocloft}
 \usepackage{amsthm} % example env
@@ -386,6 +387,7 @@ result of an expansion may itself be an alias to expand\footnote{Fortunately,
 % \end{figure}
 
 \subsection{Numeric type specifiers conversion}
+\label{sec:numconv}
 As explained in \vref{sec:flow}, after preprocessing both type specifiers, the
 procedure splits in two expert sub-procedures: one for literal type specifiers
 and one for range type specifiers, because their internal representation differ.
@@ -441,11 +443,69 @@ is also replaced even though it is not strictly necessary.)
 
 \subsection{Splitting}
 Reached this step, the input only contains \emph{canonical} \emph{literal} and
-\emph{range} type specifiers and numeric types are \emph{only} expressed as
-ranges. The next stage---expert sub-procedures---requires literal and range type
-specifiers to be separated. It is the purpose of this step.
+\emph{range} type specifiers, numeric types being \emph{only} expressed as
+ranges. The next stage---expert sub-procedures---requires literal and numeric
+types to be separated.
 
-To separate literal and numeric type specifiers
+Thus the top type \code{t} is divided into two\footnote{
+  One per kingdom actually, but since out implementation only support
+  two---literal and range types---we only focus our attention these.
+} disjoint sub-types---``kingdoms'' as Baker says. The last step, described in
+\vref{sec:numconv}, ensures the representation (in term of type specifiers) of
+the types in each kingdom is different. All numeric types are represented as
+ranges and literal types are represented as symbolic and \code{member} (without
+numbers) type specifiers.
+
+This step roughly consists in an in-depth traversal of the type specifier, using
+pattern-matching to recognize which type specifier represents which type. We use
+the implementation of \cite{paip} for its simplicity and versatility.
+\vref{lst:split} provides some examples of how the \code{split} function
+behaves.
+
+Our implementation uses a function \code{type-keep-if} which takes a predicate,
+say $P$, and a type specifier that:
+\begin{itemize}
+\item given a type specifier $T$ such as $P(T) = \top$, returns it as it is,
+\item given a type specifier $T$ such as $P(T) = \bot$, returns \code{nil},
+\item and given a logic type specifier, runs recursively on each
+  operand while keeping the operator (the symbol \code{or}, \code{and} or
+  \code{not}).
+\end{itemize}
+This function, given the predicate \code{literal-type-p} and a type $T$, returns
+$T$ with every inner type specifier that describes a non-literal type
+replaced by \code{nil} (interpreted as the \textit{empty type}). The result is then a
+sub-type of \code{(and t (not number))}.
+Likewise, given the predicate \code{range-type-p}, this function returns $T$
+with every non-range inner type specifier replaced by \code{nil} (interpreted
+this time as the \textit{empty range}). Thus the result is a sub-type of \code{number}.
+Therefore, \code{split} can easily be implemented in terms of
+\code{type-keep-if}, as shown in \vref{lst:split-impl}.
+
+\begin{listing}
+\begin{clcode}
+SLIME> (split 'symbol)
+;; (SYMBOL NIL)
+SLIME> (split '(ratio * *))
+;; (NIL (RATIO * *))
+SLIME> (split  '(and (or symbol (float * *) (ratio * *))
+                     (not (not (number * *)))))
+;; ((AND (OR SYMBOL NIL NIL) (NOT (NOT NIL)))
+;;  (AND (OR NIL (FLOAT * *) (RATIO * *))
+;;       (NOT (NOT (NUMBER * *)))))
+\end{clcode}
+\caption{The \code{split} function}
+\label{lst:split}
+\end{listing}
+
+\begin{listing}
+\begin{clcode}
+(defun split (type)
+  (list (type-keep-if #'literal-type-p type)
+        (type-keep-if #'range-type-p type)))
+\end{clcode}
+\caption{Implementation of \code{split}}
+\label{lst:split-impl}
+\end{listing}
 
 
 \section{Expert sub-procedures}
