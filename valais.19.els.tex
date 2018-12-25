@@ -15,6 +15,8 @@
 \usepackage{enumitem} % description env
 \usepackage{tikz}
 
+\newcommand\asterism{\medskip\noindent\textcolor{black!65}{\small\centerline{$\phantom{x}_{*\,\,\,*}^{\,\,\,*}$}}\smallskip}
+
 \usemintedstyle{xcode}
 \newminted{cl}{autogobble,breaklines,escapeinside=||,fontsize=\small}
 
@@ -459,17 +461,17 @@ numbers) type specifiers.
 This step roughly consists in an in-depth traversal of the type specifier, using
 pattern-matching to recognize which type specifier represents which type. We use
 the implementation of \cite{paip} for its simplicity and versatility.
-\vref{lst:split} provides some examples of how the \code{split} function
-behaves.
 
-Our implementation uses a function \code{type-keep-if} which takes a predicate,
-say $P$, and a type specifier that:
+Our implementation uses a function \code{type-keep-if} which takes a predicate
+$P$ and a type specifier $T$ and returns:
 \begin{itemize}
-\item given a type specifier $T$ such as $P(T) = \top$, returns it as it is,
-\item given a type specifier $T$ such as $P(T) = \bot$, returns \code{nil},
-\item and given a logic type specifier, runs recursively on each
-  operand while keeping the operator (the symbol \code{or}, \code{and} or
-  \code{not}).
+  \newcommand\mcode[1]{\text{\code{#1}}}
+\item $T$ as it is when $P(T) = \top$,
+\item \code{nil} when $P(T) = \bot$,
+\item \code{($op$ $U_1$ $\cdots$ $U_n$)}
+  where \(U_i = \mcode{(type-keep-if $P$ $T_i$)}\)
+  when \(T = \mcode{($op$ $T_1$ $\cdots$ $T_n$)}\)
+  and $op \in \{\mcode{and}, \mcode{or}, \mcode{not}\}$.
 \end{itemize}
 This function, given the predicate \code{literal-type-p} and a type $T$, returns
 $T$ with every inner type specifier that describes a non-literal type
@@ -479,9 +481,15 @@ Likewise, given the predicate \code{range-type-p}, this function returns $T$
 with every non-range inner type specifier replaced by \code{nil} (interpreted
 this time as the \textit{empty range}). Thus the result is a sub-type of \code{number}.
 Therefore, \code{split} can easily be implemented in terms of
-\code{type-keep-if}, as shown in \vref{lst:split-impl}.
+\code{type-keep-if}, as shown in \vref{lst:split}.
 
 \begin{listing}
+\begin{clcode}
+(defun split (type)
+  (list (type-keep-if #'literal-type-p type)
+        (type-keep-if #'range-type-p type)))
+\end{clcode}
+\asterism
 \begin{clcode}
 SLIME> (split 'symbol)
 ;; (SYMBOL NIL)
@@ -495,16 +503,6 @@ SLIME> (split  '(and (or symbol (float * *) (ratio * *))
 \end{clcode}
 \caption{The \code{split} function}
 \label{lst:split}
-\end{listing}
-
-\begin{listing}
-\begin{clcode}
-(defun split (type)
-  (list (type-keep-if #'literal-type-p type)
-        (type-keep-if #'range-type-p type)))
-\end{clcode}
-\caption{Implementation of \code{split}}
-\label{lst:split-impl}
 \end{listing}
 
 
