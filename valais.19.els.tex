@@ -505,6 +505,19 @@ SLIME> (split  '(and (or symbol (float * *) (ratio * *))
 \label{lst:split}
 \end{listing}
 
+\subsection{Type unification}
+According to theory, for any types $T$ and $U$,
+\(T \subseteq U \Leftrightarrow T \cap \overline{U} = \emptyset\).
+Therefore, for any type specifiers \code{T} and \code{U}, when
+\code{(subtypep T U)} returns \code{T T}, then
+\code{(subtypep `(and ,T (not ,U)) nil)} also returns \code{T T}.
+
+The results of the \code{split} function are zipped together using
+\code{(lambda (x y) `(and ,x (not ,y)))} before being passed to the expert
+sub-procedures. This way, they will not have to prove that an arbitrary type is a
+sub-type of \emph{another} arbitrary sub-type, but rather whether \emph{one}
+arbitrary type specifier describes the empty type (which is substancially
+easier to reason about and implement).
 
 \section{Expert sub-procedures}
 \label{sec:exp}
