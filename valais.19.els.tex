@@ -261,7 +261,7 @@ Follows some vocabulary, notations and conventions used in this article.
     implemented as a class.
   \item[symbolic form] A type specifier which type is \code{symbol}.
   \item[compound form] A type specifier which type is \code{list}.
-  \item[logic type] A toplevel union, intersection or complement.
+  \item[logic type] A top-level union, intersection or complement.
   \item[literal type] A type specifier that only contains symbolic types,
     \code{member} types and logic compound forms.
   \item[interval] A mathematical interval that may not be a valid type specifier.
@@ -283,20 +283,20 @@ Follows some vocabulary, notations and conventions used in this article.
 detailed in the following sections. There are three \emph{major stages}:
 
 \begin{enumerate}
-\item \emph{The preprocessing} --- Both type specifiers are processed in order to
+\item \emph{The pre-processing} --- Both type specifiers are processed in order to
   simplify further calculations: the aliases are expanded, each occurrence of
   numeric types are converted to their equivalent range type specifier and the
-  type specifier is finally splitted. This stage is detailed in % section
+  type specifier is finally split. This stage is detailed in % section
   \vref{sec:pre}.
-\item \emph{Expert sub-procedures} --- Once splitted, each sub-type specifier is
+\item \emph{Expert sub-procedures} --- Once split, each sub-type specifier is
   redirected to the appropriate expert sub-procedure. Such procedures' job is to
   determine, in its own \emph{kingdom} in Baker's terminology, whether or not it
   can \emph{prove} the assertion ``$A$ is a sub-type of $B$'' to be \emph{wrong}.
-  Our procedures currently only supports literal and range type specifers---an
+  Our procedures currently only supports literal and range type specifiers---an
   expert sub-procedure has been implemented only for these two kingdoms. This
   stage is detailed in \vref{sec:exp}.
 \item \emph{Result accumulation} --- Eventually, all expert sub-procedures
-  return (a boolean) and the results are accumulated using conjunction.
+  return (a Boolean) and the results are accumulated using conjunction.
 \end{enumerate}
 
 \begin{figure}
@@ -306,7 +306,7 @@ detailed in the following sections. There are three \emph{major stages}:
   \label{fig:flow}
 \end{figure}
 
-\section{Preprocessing}
+\section{Pre-processing}
 \label{sec:pre}
 % Both \code{subtypep} parameters are first pre-processed independently.
 % TODO add MOP bib ref for finalized classes
@@ -318,7 +318,7 @@ considering the type created in \vref{lst:deftype},
 
 Unlike for the macro expansion, the \code{deftype} expansion is not
 standardized. Thus a solution must be found for each implementation
-independantly. As our efforts are focused on \sbcl{} (yet), we discuss how we
+independently. As our efforts are focused on \sbcl{} (yet), we discuss how we
 implement the \code{expand} function for that compiler.
 
 \sbcl's \code{subtypep} heavily relies on the function
@@ -333,10 +333,10 @@ of the work of \code{subtypep}, as shown in \vref{fig:specifiertype}
   around \sbcl's \footcode{subtypep} which is a bit more efficient than the raw
   implementation}.
 Considering the lack of efficiency of that function and the fact that it would
-not be trivial to simplify it to only keep the interresting bits, we decided to
+not be trivial to simplify it to only keep the interesting bits, we decided to
 stick to another, more cost-effective solution.
 
-The function \code{sb-ext:typexpand} takes a type specfier and tries to expand
+The function \code{sb-ext:typexpand} takes a type specifier and tries to expand
 it (not recursively) and either returns the expansion result or the input type
 specifier if it is not expandable. \code{(sb-ext:typexpand 'integer)} returns
 \code{integer} since it is not a \code{deftype} alias whereas
@@ -344,7 +344,7 @@ specifier if it is not expandable. \code{(sb-ext:typexpand 'integer)} returns
 To expand a whole type specifier, it just needs to go through it, applying
 \code{sb-ext:typexpand} on each list or atom. One subtlety though is that the
 result of an expansion may itself be an alias to expand\footnote{Fortunately,
-  \footcode{sb-ext:typexpand} also returns a boolean indicating whether or not
+  \footcode{sb-ext:typexpand} also returns a Boolean indicating whether or not
   an expansion happened.}.
 
 \newcommand\ststpscale{0.5}
@@ -366,7 +366,7 @@ result of an expansion may itself be an alias to expand\footnote{Fortunately,
 
 \subsection{Numeric type specifiers conversion}
 \label{sec:numconv}
-As explained in \vref{sec:flow}, after preprocessing both type specifiers, the
+As explained in \vref{sec:flow}, after pre-processing both type specifiers, the
 procedure splits in two expert sub-procedures: one for literal type specifiers
 and one for range type specifiers, because their internal representation differ.
 Numeric types---types containing numbers (mathematically speaking)---can have
