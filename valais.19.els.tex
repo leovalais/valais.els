@@ -305,23 +305,7 @@ detailed in the following sections. There are three \emph{major stages}:
   stage is detailed in \vref{sec:exp}.
 \item \emph{Result accumulation} --- Eventually, all expert sub-procedures
   return (a boolean) and the results are accumulated using conjunction.
-  From a top-down point of view, the \code{subtypep} function could be
-  implemented as shown in \vref{lst:tdstp}.
 \end{enumerate}
-
-\begin{listing}
-\begin{clcode}
-(defun subtypep (a b)
-  (reduce (lambda (x y) (and x y))
-          (mapcar (lambda (expert t1 t2)
-                    (funcall expert t1 t2))
-                  (list #'literal-sub-proc #'range-sub-proc)
-                  (split (num-types->ranges (expand a)))
-                  (split (num-types->ranges (expand b))))))
-\end{clcode}
-\caption{A top-down approach of \code{subtypep}}
-\label{lst:tdstp}
-\end{listing}
 
 \begin{figure}
   \centering
@@ -521,8 +505,73 @@ easier to reason about and implement).
 
 \section{Expert sub-procedures}
 \label{sec:exp}
+\vref{lst:tdstp} shows how \code{subtypep} could be defined from a top down
+point of view. It shows that, according to \vref{fig:flow}, both type
+specifiers are processed independently, split into two kingdoms (literal and
+numeric types) and unified in an \code{(and U (not V))} fashion. The
+expert sub-procedures, \code{literal-type-nil-p} and \code{numeric-type-nil-p},
+each accept one argument---a type specifier, say $T$---and returns a Boolean
+indicating whether $T$ describes the empty type (\code{nil}).
 
-\section{Procedure for literal types}
+Each sub-procedure answers inside its kingdom. There are two kingdoms supported
+by our implementation:
+\begin{itemize}
+\item \emph{literal types} --- at most the type described by \code{(and (not
+    number) (not (array * *)))}\footnote{
+    Actually this is not completely accurate since the type \footcode{string}
+    can be described using array type specifiers. However, since the latter is
+    not supported by our implementation yet, we consider the types
+    \footcode{string} and \footcode{bit-vector} being literal types since their
+    symbolic representation is kept through the entire process. This is very
+    likely to change in the future.
+    }, only expressed as symbolic and \code{member} type
+  specifiers.
+\item \emph{numeric types} --- at most the type described by \code{number}, only
+  expressed using interval type specifiers.
+\end{itemize}
+
+There are several properties that are derived from the precedent pre-processing
+steps. First of all, both kingdoms' procedures are guaranteed to receive as
+argument \emph{canonical} type specifiers only. These are guaranteed not to
+contain \code{atom} or \code{t} type specifiers. The occurrences of \code{(and)}
+and \code{(or)} have been replaced respectively by \code{t} and \code{nil}.
+\code{eql} type specifiers have been replaced by \code{member} type specifiers.
+\code{member} type specifiers only occur in the literal type kingdom and contain
+no numerical data. Numerical data are only expressed as intervals, which are likely
+not to be valid type specifiers. Both kingdoms accept the type specifier
+\code{nil} but with a \emph{different meaning}: for literal types, \code{nil}
+means the empty type which complement is \code{t} whereas for numeric types it
+represent the empty range witch complement is \code{(number * *)}.
+
+In the following sections we describe in detail the implementation of the expert
+sub-procedures for the literal (\vref{sec:explit}) and numeric
+(\vref{sec:expnum}) type kingdoms. We also briefly discuss
+about the array type kingdom and the \code{cons} type specifier family,
+which Baker ignores in his article, in \vref{sec:expoth}.
+
+\begin{listing}
+\begin{clcode}
+(defun subtypep (a b)
+  (reduce (lambda (x y) (and x y))
+          (mapcar (lambda (expert t1 t2)
+                    (funcall expert `(and ,t1 (not ,t2))))
+                  (list #'literal-type-nil-p
+                        #'numeric-type-nil-p)
+                  (split (num-types->ranges (expand a)))
+                  (split (num-types->ranges (expand b))))))
+\end{clcode}
+\caption{A top-down approach of \code{subtypep}}
+\label{lst:tdstp}
+\end{listing}
+
+\subsection{Procedure for literal types}
+\label{sec:explit}
+
+\subsection{Procedure for numeric types}
+\label{sec:expnum}
+
+\subsection{Array types and \code[\large]{cons} type specifiers}
+\label{sec:expoth}
 
 \section{Conclusion and Future Work}
 [..] (Flow programming @SICP)
