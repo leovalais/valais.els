@@ -440,8 +440,8 @@ must be replaced by \code{(or atom sequence)}.
 Yet another subtlety is that the type specifiers \code{(and)} and
 \code{(or)} respectively describe the types \code{t} and \code{nil}. Hence
 every occurrence of \code{(and)} must be replaced by the replacement of
-\code{t} described in the last paragraph. (For consistency's sake, \code{(or)}
-is also replaced even though it is not strictly necessary.)
+\code{t} described in the last paragraph. In order to remove that annoying
+corner case completely, \code{(or)} is also replaced (by \code{nil}).
 
 \subsection{Splitting}
 Reached this step, the input only contains \emph{canonical} \emph{literal} and
