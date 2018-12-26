@@ -119,9 +119,10 @@ either returns the values \code{(t t)} when \code{A} is a sub-type of \code{B},
 (or failed to) answer the question. The latter can happen when the type
 specifier \code{(satisfies P)} (representing the type $\{x \mid
 \mathtt{P(x)}\}$ for some predicate and total function\footnote{A function
-  defined over its entire definition domain.} \code{P}) is involved. As shown in
-\vref{lst:satisfies}, there is indeed no way for the function to answer anything
-else than \code{(nil nil)} for any arbitrary predicates \code{F} and \code{G}.
+  defined over its entire definition domain.} \code{P}) is involved. For example,
+there is indeed no way for the function to answer anything else than \code{(nil
+  nil)} for any arbitrary predicates \code{F} and \code{G} to the question
+\code{(subtypep '(satisfies F) '(satisfies G))}.
 
 However some implementations abuse of the permission to return \code{(nil nil)}.
 For example, in \sbcl{} (the implementation we are currently focusing our
@@ -155,15 +156,6 @@ bugs and diverse issues but we have found some encouraging results about
 accuracy and even about efficiency.
 
 \begin{listing}[!p]
-\begin{clcode}
-(subtypep '(satisfies F) '(satisfies G))
-;; returns (NIL NIL)
-\end{clcode}
-  \caption{Impossible for \code{subtypep} to answer}
-  \label{lst:satisfies}
-\end{listing}
-
-\begin{listing}
   \begin{clcode}
 (sb!xc:deftype keyword ()
   '(and symbol (satisfies keywordp)))
