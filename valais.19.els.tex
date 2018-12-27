@@ -524,10 +524,10 @@ by our implementation:
 
 There are several properties that are derived from the precedent pre-processing
 steps. First of all, both kingdoms' procedures are guaranteed to receive as
-argument \emph{canonical} type specifiers only. These are guaranteed not to
+argument \emph{canonical} type specifiers only. These are also guaranteed not to
 contain \code{atom} or \code{t} type specifiers. The occurrences of \code{(and)}
 and \code{(or)} have been replaced respectively by \code{t} and \code{nil}.
-\code{eql} type specifiers have been replaced by \code{member} type specifiers.
+\code{eql} type specifiers have been replaced by equivalent \code{member} expressions.
 \code{member} type specifiers only occur in the literal type kingdom and contain
 no numerical data. Numerical data are only expressed as intervals, which are likely
 not to be valid type specifiers. Both kingdoms accept the type specifier
@@ -558,6 +558,77 @@ which Baker ignores in his article, in \vref{sec:expoth}.
 
 \subsection{Procedure for literal types}
 \label{sec:explit}
+\subsubsection{Concept}
+To represent types in the literal types kingdom, we suppose at first that there
+is way to enumerate every element in \code{t}, say $e_1, e_2, \dots, e_\omega$.
+Then, let $t_1, t_2, \dots, t_\omega$ be all the (non-strict) sub-types of the
+top-level type \code{t}. We associate to each pair $\left(e_i, t_j\right)$ the
+bit $b_{ij}$ with the value $1$ when $e_i \in t_j$ and $0$ when $e_i \notin t_j$.
+Let $bv_i$ be the \emph{representative bit-vector} associated to the type $t_i$,
+defined by $\left[b_{0i}, b_{1i}, \dots, b_{\omega i}\right]$. These
+bit-vectors are the rows of the infinite matrix on \vref{eq:matrix} which
+illustrates the system.
+
+\[
+  \bordermatrix{
+            &e_1   &e_2   &e_3    &e_4    &\cdots&e_\omega \cr
+    t_1     &1     &0     &0      &0     &\cdots&1       \cr
+    t_2     &0     &1     &1      &0     &\cdots&0       \cr
+    t_3     &0     &0     &0      &1     &\cdots&0       \cr
+    \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots  \cr
+    t_\omega&1     &0     &1      &0     &\cdots&0
+  } \label{eq:matrix} \tag{$B_{\omega\omega}$}
+\]
+
+% \newcommand{\reldiff}[2]{\left(#1 \cup #2\right) \cap \overline{#1 \cap #2}}
+\newcommand{\reldiff}[2]{#1 \cup #2 \backslash #1 \cap #2}
+
+\begin{proof}
+  \emph{\small Each type has a unique bit-vector representation.}
+
+  Let $t_i$ and $t_j$ two distinct types. Thus, $\reldiff{t_i}{t_j} \neq \emptyset$.
+  Let $e_k \in \reldiff{t_i}{t_j}$. By definition, we have $b_{ki} \neq b_{kj}$.
+  Hence $bv_i \neq bv_j$. Two distinct types are represented by two different
+  bit-vectors.
+
+  Similarly, let $bv_i$ and $bv_j$ be two different bit-vectors. Then it
+  necessarily exists a $k$ such as $b_{ki} \neq b_{kj}$. Therefore
+  $\exists e_k, \left(e_k \notin t_i \vee e_k \notin t_j\right) \wedge e_k
+  \notin t_i \cap t_j$. Hence $t_i \neq t_j$.
+  \[\qedhere\]
+\end{proof}
+
+\begin{proof}
+  \emph{\small Type intersection, union and complement are equivalent to Boolean
+    operations ``and'', ``or'' and ``not'' on representative bit-vectors.}
+
+  Let two types $t_i$ and $t_j$.
+  \begin{enumerate}
+  \item Let $t_k = t_i \cup t_j$. By definition, $\forall l \in \mathbb{N} \cup
+    \{\omega\}, b_{lk} = 1$ iff $b_{li} = 1$ or $b_{lj} = 1$, that is $b_{lk} =
+    b_{li} \vee b_{lj}$. Thus, also by definition:
+    \begin{align*}
+      bv_k &= \left[b_{0k}, b_{1k}, \dots, b_{\omega k}\right]  \\
+           &= \left[b_{0i} \vee b_{0j}, b_{1i} \vee b_{1j}, \dots, b_{\omega i} \vee b_{\omega j}\right]  \\
+           &= bv_i \vee bv_j
+    \end{align*}
+  \item We proceed similarly for the intersection and the Boolean logic operator
+    ``and'' ($\wedge$).
+  \item Let $t_k = \overline{t_i}$. We have by definition $\forall l \in
+    \mathbb{N} \cup \{\omega\}, b_{lk} = \neg b_{li}$. Then:
+    \begin{align*}
+      bv_k &= \left[\neg b_{0i}, \neg b_{1i}, \dots, \neg b_{\omega i}\right]  \\
+           &= \neg bv_i \qedhere
+    \end{align*}
+  \end{enumerate}
+\end{proof}
+
+On each \code{literal-type-nil-p} call, we lookup each symbolic type
+specifiers' (e.g., \code{symbol}) and \code{member} expressions' (roughly
+anonymous types) bit-vectors in the matrix, combine these
+on each logic type specifier using the appropriate Boolean operation. Finally,
+we compare the bit-vector against the bit-vector of \code{nil}, that is
+$\left[0, 0, \dots, 0\right]$, and return the result.
 
 \subsection{Procedure for numeric types}
 \label{sec:expnum}
