@@ -630,6 +630,31 @@ on each logic type specifier using the appropriate Boolean operation. Finally,
 we compare the bit-vector against the bit-vector of \code{nil}, that is
 $\left[0, 0, \dots, 0\right]$, and return the result.
 
+\subsubsection{In practice}
+Common Lisp cannot enumerate all the possible sub-types of \code{t} nor all of
+its elements. Fortunately we do not need them all. We only need to consider the
+types present in the input type specifier to determine its emptiness.
+
+It also means that we do \emph{not need to enumerate all the elements of these
+  types}. It is that aspect of the procedure of Baker that makes it both
+powerful and quite complex to understand at first. We only need \emph{enough}
+elements from a type to distinguish it from the other types. Because we are
+now considering only a \emph{finite} number of types, say $t_1, \dots, t_n$, to
+register a new type $t_{n+1}$ to our (now \emph{finite}) matrix, we only need to
+find an element $e \in t_{n+1}$ such as $e \notin t_1 \cup \dots \cup t_n$.
+
+Now let's suppose that $t_{n+1}$'s type specifier is in fact \code{(member
+  $e$)}, that $e$ is itself chosen as a representative element for another type,
+say $t_k$, and that $t_k$ is only distinguished from the other registered types
+by that element $e$. $t_{n+1}$ and $t_k$ would then have the same bit-vector
+representation when these types are likely to be distinct. The general solution
+for that kind of problem with \code{member} type specifiers is to register
+\emph{all} the elements. When there is a conflicting element $e$ already
+registered as a representative for another types, we generate additional
+representatives for these types. That precaution ensures that this kind of
+conflict never happen and simplify greatly the implementation of \code{member}
+type specifiers.
+
 \subsection{Procedure for numeric types}
 \label{sec:expnum}
 
