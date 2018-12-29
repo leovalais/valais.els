@@ -308,8 +308,6 @@ detailed in the following sections. There are three \emph{major stages}:
 
 \section{Pre-processing}
 \label{sec:pre}
-% Both \code{subtypep} parameters are first pre-processed independently.
-% TODO add MOP bib ref for finalized classes
 \subsection{Alias expansion}
 The very first step is to ensure that the type specifier is in its
 \emph{canonical form}, that is, having all its aliases expanded. For example,
@@ -580,11 +578,9 @@ illustrates the system.
   } \label{eq:matrix} \tag{$B_{\omega\omega}$}
 \]
 
-% \newcommand{\reldiff}[2]{\left(#1 \cup #2\right) \cap \overline{#1 \cap #2}}
-\newcommand{\reldiff}[2]{#1 \cup #2 \backslash #1 \cap #2}
-
 \begin{proof}
   \emph{\small Each type has a unique bit-vector representation.}
+  \newcommand{\reldiff}[2]{#1 \cup #2 \backslash #1 \cap #2}
 
   Let $t_i$ and $t_j$ two distinct types. Thus, $\reldiff{t_i}{t_j} \neq \emptyset$.
   Let $e_k \in \reldiff{t_i}{t_j}$. By definition, we have $b_{ik} \neq b_{jk}$.
