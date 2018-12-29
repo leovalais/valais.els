@@ -714,8 +714,8 @@ the class prototype of $C$ yet.
 To implement that registration matrix system, we use two functions:
 \sloppy${B : \text{type name} \longmapsto \text{bit-vector}}$,
 with $B(t_i) = bv_i$, and
-\sloppy${P : \text{representative} \longmapsto \text{bit index}}$,
-with $P(e_i) = i - 1$.
+\sloppy${I : \text{representative} \longmapsto \text{bit index}}$,
+with $I(e_i) = i - 1$.
 Baker suggests in his small example \cite{baker1992} using the operator
 \code{set} which is deprecated in modern Common Lisp programming. Instead, we
 use hash tables to represent these functions. Type names are \code{symbol}s,
@@ -723,13 +723,14 @@ bit-vectors are \code{bit-vector}s and element indexes are positive
 \code{integer}s. To register a new type $t_{n+1}$, it is added to the $B$ hash
 table and its bit-vector content $b_{(n+1)i}$ is evaluated for all the existing
 representatives ($i \in \intvl{1;m}$). To register a new representative
-$e_{m+1}$, it is added to the $P$ hash table with the index $m$. Then we add one
+$e_{m+1}$, it is added to the $I$ hash table with the index $m$. Then we add one
 bit (the $m$-th bit) to each bit-vector $bv_i$ and evaluate it in respect to the
 type $t_i$. Thus, to retrieve the bit-vector of a registered primitive or
 user-defined type $t$, we just lookup its value $B(t)$. To compute the
 bit-vector of a \code{member} expression \code{(member $e_1$ $\cdots$ $e_n$)},
-we use the value $\bigvee_{i=1}^n \beta\left(P\left(e_i\right)\right)$, where
-$\beta(x)$ returns the null bit-vector with the $x$-th bit activated.
+we use the value $\bigvee_{i=1}^n \beta\left(I\left(e_i\right)\right)$, where
+$\beta(x)$ returns the null 0-based bit-vector with the $x$-th bit activated.
+
 % NOTE Perhaps talk about doubling the size of bit-vector instead of adding one
 % bit each time.
 
