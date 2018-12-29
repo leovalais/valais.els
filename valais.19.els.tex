@@ -275,8 +275,6 @@ Follows some vocabulary, notations and conventions used in this article.
       specifier describing} $T$.
   \item[$T \subseteq T'$] The \emph{type} $T$ is a non-strict sub-type of $T'$.
     We always have \code{(subtypep $T$ $T'$)}.
-  \item[$T \subset T'$] The \emph{type} $T$ is a strict sub-type of $T'$.
-    We always have \code{(and (subtypep $T$ $T'$) (not (subtypep $T'$ $T$)))}.
 \end{description}
 
 \section{General procedure flow}
