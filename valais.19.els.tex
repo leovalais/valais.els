@@ -6,6 +6,7 @@
 \usepackage[T1]{fontenc}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{stmaryrd}
 \usepackage{graphicx}
 \usepackage{varioref}   %
 \usepackage{hyperref}
@@ -16,6 +17,7 @@
 \usepackage{tikz}
 
 \newcommand\asterism{\medskip\noindent\textcolor{black!65}{\small\centerline{$\phantom{x}_{*\,\,\,*}^{\,\,\,*}$}}\smallskip}
+\newcommand\intvl[1]{\llbracket#1\rrbracket}
 
 \usemintedstyle{xcode}
 \newminted{cl}{autogobble,breaklines,escapeinside=||,fontsize=\small}
@@ -653,6 +655,85 @@ registered as a representative for another types, we generate additional
 representatives for these types. That precaution ensures that this kind of
 conflict never happen and simplify greatly the implementation of \code{member}
 type specifiers.
+
+\subsubsection{Implementation concerns}
+The method for choosing the representative elements for a type depends of its
+nature: it can be a primitive type, a user-defined type (class, structure or
+condition) or a \code{member} expression.
+
+Since primitive types are known, their representative elements are chosen at
+compile-time. The $t_{n+1}$ subtlety above should still be kept in mind. For
+instance, the type \code{null} is a sub-type of both \code{symbol} and
+\code{list} so three representative elements are needed: \code{nil}, a non-empty
+list and a symbol other than \code{nil}. Note that some primitive types are an
+\emph{exhaustive partition} of other types (e.g., \code{character}).
+Obviously, in that case, such a precaution does not apply.
+
+For user-defined types, Baker suggests to extend the type creation mechanism to
+register a dummy element as a representative. We decided \emph{not} to follow
+his approach because of the poor portability of his solution. Indeed, this
+work, often non-trivial, would have to be repeated for each targeted Common Lisp
+implementation. Moreover, it would register a representative for \emph{every}
+class created, thus increasing bit-vectors' size uselessly since only a few of
+these classes are likely to appear in a \code{subtypep} type specifier.
+We decided instead to use the \emph{Meta Object Protocol} (\textsc{Mop})
+\cite{bib:kiczales.91.book}, more specifically \emph{class prototypes}. Class
+prototypes are pseudo-instances of a class, created without executing
+\code{initialize-instance} and which \code{typep} and \code{eql} view as traditional
+instances. However, to create a class prototype, the class needs to be
+\emph{finalized} and it cannot be guaranteed until it is instantiated.
+Since that class may be involved in a \code{subtypep} call before that happens,
+when a new class is encountered, we force its finalization using the function
+\code{ensure-finalized} from the (portable) \code{closer-mop} package.
+Then, we create the prototype of the class using \code{sb-mop:class-prototype}
+and register it. This method is much more portable than Baker's and does not
+require to hook inside the implementation. In \sbcl{} and other major Common
+Lisp implementations, structures and conditions are implemented as classes so no
+additional work is required. But that solution is not fully portable either.
+
+Each time a \code{member} type specifier is encountered, we must ensure that we
+generate a new representative element whenever we try to register a
+\code{member} element already registered. The Common Lisp standard
+\cite{bib:ansi.94.cl} states that the \code{member} type specifier is defined in
+terms of \code{eql}. That is, \code{(typep $e$ '(member $e_1$ $\cdots$ $e_n$))}
+uses \code{eql} to compare $e$ to the successive $e_k$ to check the membership.
+Fortunately, within the literal types kingdom, the only problematic types are
+\code{character} and \code{symbol} since the representatives are not supposed to
+be accessible to the user of \code{subtypep}. (E.g., the representative of the
+type \code{list} \code{(1 2 3)} is not \code{eql} to the list inside
+\code{(member (1 2 3))}.) Therefore, only the representatives of these types
+need to be actually checked when registering \code{member}'s elements.
+To generate a new symbol, we use \code{alexandria:symbolicate}.
+(The \code{keyword} sub-type of symbol is also subject to the problem.)
+To generate a new character, we first need to know whether it is a
+\code{base-char} or an \code{extended-char}. Then we pick a character of that
+type not registered yet. When all the characters of that type are registered
+there is nothing to do (since the type is fully represented in the matrix, no
+misinterpretation can occur). We have not addressed the problem of a type
+specifier involving a user class $C$ and a \code{member} expression containing
+the class prototype of $C$ yet.
+
+To implement that registration matrix system, we use two functions:
+\sloppy${B : \text{type name} \longmapsto \text{bit-vector}}$,
+with $B(t_i) = bv_i$, and
+\sloppy${P : \text{representative} \longmapsto \text{bit index}}$,
+with $P(e_i) = i - 1$.
+Baker suggests in his small example \cite{baker1992} using the operator
+\code{set} which is deprecated in modern Common Lisp programming. Instead, we
+use hash tables to represent these functions. Type names are \code{symbol}s,
+bit-vectors are \code{bit-vector}s and element indexes are positive
+\code{integer}s. To register a new type $t_{n+1}$, it is added to the $B$ hash
+table and its bit-vector content $b_{i(n+1)}$ is evaluated for all the existing
+representatives ($i \in \intvl{1;m}$). To register a new representative
+$e_{m+1}$, it is added to the $P$ hash table with the index $m$. Then we add one
+bit (the $m$-th bit) to each bit-vector $bv_i$ and evaluate it in respect to the
+type $t_i$. Thus, to retrieve the bit-vector of a registered primitive or
+user-defined type $t$, we just lookup its value $B(t)$. To compute the
+bit-vector of a \code{member} expression \code{(member $e_1$ $\cdots$ $e_n$)},
+we use the value $\bigvee_{i=1}^n \beta\left(P\left(e_i\right)\right)$, where
+$\beta(x)$ returns the null bit-vector with the $x$-th bit activated.
+% NOTE Perhaps talk about doubling the size of bit-vector instead of adding one
+% bit each time.
 
 \subsection{Procedure for numeric types}
 \label{sec:expnum}
