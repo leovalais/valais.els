@@ -562,10 +562,10 @@ which Baker ignores in his article, in \vref{sec:expoth}.
 To represent types in the literal types kingdom, we suppose at first that there
 is way to enumerate every element in \code{t}, say $e_1, e_2, \dots, e_\omega$.
 Then, let $t_1, t_2, \dots, t_\omega$ be all the (non-strict) sub-types of the
-top-level type \code{t}. We associate to each pair $\left(e_i, t_j\right)$ the
-bit $b_{ij}$ with the value $1$ when $e_i \in t_j$ and $0$ when $e_i \notin t_j$.
+top-level type \code{t}. We associate to each pair $\left(t_i, e_j\right)$ the
+bit $b_{ij}$ with the value $1$ when $e_j \in t_i$ and $0$ when $e_j \notin t_i$.
 Let $bv_i$ be the \emph{representative bit-vector} associated to the type $t_i$,
-defined by $\left[b_{0i}, b_{1i}, \dots, b_{\omega i}\right]$. These
+defined by $\left[b_{i0}, b_{i1}, \dots, b_{i\omega}\right]$. These
 bit-vectors are the rows of the infinite matrix on \vref{eq:matrix} which
 illustrates the system.
 
@@ -587,12 +587,12 @@ illustrates the system.
   \emph{\small Each type has a unique bit-vector representation.}
 
   Let $t_i$ and $t_j$ two distinct types. Thus, $\reldiff{t_i}{t_j} \neq \emptyset$.
-  Let $e_k \in \reldiff{t_i}{t_j}$. By definition, we have $b_{ki} \neq b_{kj}$.
+  Let $e_k \in \reldiff{t_i}{t_j}$. By definition, we have $b_{ik} \neq b_{jk}$.
   Hence $bv_i \neq bv_j$. Two distinct types are represented by two different
   bit-vectors.
 
   Similarly, let $bv_i$ and $bv_j$ be two different bit-vectors. Then it
-  necessarily exists a $k$ such as $b_{ki} \neq b_{kj}$. Therefore
+  necessarily exists a $k$ such as $b_{ik} \neq b_{jk}$. Therefore
   $\exists e_k, \left(e_k \notin t_i \vee e_k \notin t_j\right) \wedge e_k
   \notin t_i \cap t_j$. Hence $t_i \neq t_j$. \qedhere
 \end{proof}
@@ -604,19 +604,19 @@ illustrates the system.
   Let two types $t_i$ and $t_j$.
   \begin{enumerate}
   \item Let $t_k = t_i \cup t_j$. By definition, $\forall l \in \mathbb{N} \cup
-    \{\omega\}, b_{lk} = 1$ iff $b_{li} = 1$ or $b_{lj} = 1$, that is $b_{lk} =
-    b_{li} \vee b_{lj}$. Thus, also by definition:
+    \{\omega\}, b_{kl} = 1$ iff $b_{il} = 1$ or $b_{jl} = 1$, that is $b_{kl} =
+    b_{il} \vee b_{jl}$. Thus, also by definition:
     \begin{align*}
-      bv_k &= \left[b_{0k}, b_{1k}, \dots, b_{\omega k}\right]  \\
-           &= \left[b_{0i} \vee b_{0j}, b_{1i} \vee b_{1j}, \dots, b_{\omega i} \vee b_{\omega j}\right]  \\
+      bv_k &= \left[b_{k0}, b_{k1}, \dots, b_{k\omega}\right]  \\
+           &= \left[b_{i0} \vee b_{j0}, b_{i1} \vee b_{j1}, \dots, b_{i\omega} \vee b_{j\omega}\right]  \\
            &= bv_i \vee bv_j
     \end{align*}
   \item We proceed similarly for the intersection and the Boolean logic operator
     ``and'' ($\wedge$).
   \item Let $t_k = \overline{t_i}$. We have by definition $\forall l \in
-    \mathbb{N} \cup \{\omega\}, b_{lk} = \neg b_{li}$. Then:
+    \mathbb{N} \cup \{\omega\}, b_{kl} = \neg b_{il}$. Then:
     \begin{align*}
-      bv_k &= \left[\neg b_{0i}, \neg b_{1i}, \dots, \neg b_{\omega i}\right]  \\
+      bv_k &= \left[\neg b_{i0}, \neg b_{i1}, \dots, \neg b_{i\omega}\right]  \\
            &= \neg bv_i \qedhere
     \end{align*}
   \end{enumerate}
@@ -721,7 +721,7 @@ Baker suggests in his small example \cite{baker1992} using the operator
 use hash tables to represent these functions. Type names are \code{symbol}s,
 bit-vectors are \code{bit-vector}s and element indexes are positive
 \code{integer}s. To register a new type $t_{n+1}$, it is added to the $B$ hash
-table and its bit-vector content $b_{i(n+1)}$ is evaluated for all the existing
+table and its bit-vector content $b_{(n+1)i}$ is evaluated for all the existing
 representatives ($i \in \intvl{1;m}$). To register a new representative
 $e_{m+1}$, it is added to the $P$ hash table with the index $m$. Then we add one
 bit (the $m$-th bit) to each bit-vector $bv_i$ and evaluate it in respect to the
