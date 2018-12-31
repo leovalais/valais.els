@@ -277,7 +277,7 @@ Follows some vocabulary, notations and conventions used in this article.
     We always have \code{(subtypep $T$ $T'$)}.
 \end{description}
 
-\section{General procedure flow}
+\section{Procedure's mechanisms overview}
 \label{sec:flow}
 \vref{fig:flow} pictures the internals of our implementation. Every step will be
 detailed in the following sections. There are three \emph{major stages}:
@@ -302,7 +302,7 @@ detailed in the following sections. There are three \emph{major stages}:
 \begin{figure}
   \centering
   \input{assets/19/flow}
-  \caption{Internal flow for \code{(subtypep $A$ $B$)}}
+  \caption{Internal flowchart of \code{(subtypep $A$ $B$)}}
   \label{fig:flow}
 \end{figure}
 
@@ -369,7 +369,7 @@ different representations: a \emph{symbol} (e.g., \code{fixnum}), a \emph{range}
 latter is a range. Thus, the numerical type information would be distributed in
 the different expert sub-procedures (which does not share any data). For
 consistency's sake and to obtain accurate results, a single internal
-representation should be chosen. The symbolic and \code{member} numeric types
+representation has to be chosen. The symbolic and \code{member} numeric types
 must then be converted into an equivalent type specifier involving only ranges
 to describe numerical data.
 
@@ -378,7 +378,7 @@ to describe numerical data.
   \code{(U * *)}\footnote{Implementations supporting the IEEE floating point
     raise many concerns with \footcode{-0.0}, $NaN$, $+\infty$ and $-\infty$.
     Baker explains in detail how to handle these cases, which our implementation
-    (FIXME is that assertion totally true?)
+    (FIXME is that completely true?)
     does not support yet.}. Note the new ``type specifier'' is likely
   \emph{not} to be valid (e.g., \code{(fixnum * *)} is invalid).
 \item \code{member} type specifiers --- e.g., \code{(member a 1 2 :b)} is
@@ -504,7 +504,7 @@ by our implementation:
 \item \emph{literal types} --- at most the type described by \code{(and (not
     number) (not (array * *)))}\footnote{
     Actually this is not completely accurate since the type \footcode{string}
-    can be described using array type specifiers. However, since the latter is
+    can be described using array type specifiers. However, since the latter are
     not supported by our implementation yet, we consider the types
     \footcode{string} and \footcode{bit-vector} being literal types since their
     symbolic representation is kept through the entire process. This is very
@@ -553,7 +553,7 @@ which Baker ignores in his article, in \vref{sec:expoth}.
 \label{sec:explit}
 \subsubsection{Concept}
 To represent types in the literal types kingdom, we suppose at first that there
-is way to enumerate every element in \code{t}, say $e_1, e_2, \dots, e_\omega$.
+is a way to enumerate every element in \code{t}, say $e_1, e_2, \dots, e_\omega$.
 Then, let $t_1, t_2, \dots, t_\omega$ be all the (non-strict) sub-types of the
 top-level type \code{t}. We associate to each pair $\left(t_i, e_j\right)$ the
 bit $b_{ij}$ with the value $1$ when $e_j \in t_i$ and $0$ when $e_j \notin t_i$.
@@ -681,8 +681,10 @@ require to hook inside the implementation. Since conditions are classes, they
 are supported automatically. The Common Lisp standard \cite{bib:ansi.94.cl}
 states that ``\code{defstruct} without a \code{:type} option defines a class
 with the structure name as its name'', hence in that case no additional work is
-required. Our implementation does not support the other cases (\code{:type}
-being either \code{list}, \code{vector} or \code{(vector $T$)}).
+required. The standard also states that ``Specifying this option [...] prevents
+the structure name from becoming a valid type specifier recognizable by
+\code{typep}.'' Thus, \code{subtypep} is not concerned by these types of
+structures.
 
 Each time a \code{member} type specifier is encountered, we must ensure that we
 generate a new representative element whenever we try to register a
@@ -762,13 +764,17 @@ exponential time is ``acceptable'' (as it is for ranges) before rejecting it.
 The accuracy of existing \code{subtypep} procedures for the \code{cons} type
 specifier also have to be studied.
 
+\section{Early results}
+
 \section{Conclusion and Future Work}
-[..] (Flow programming @SICP)
+[...]
 
 Even if, in the future, we are to conclude that our implementation is less
 efficient than those which already exists, Baker's algorithm would still likely to
 improve the predicate's accuracy. Users would then have the ability to
 choose whichever \code{subtypep} implementation fits their needs the best.
+
+[...]
 
 \bibliography{common}
 
