@@ -345,22 +345,17 @@ result of an expansion may itself be an alias to expand\footnote{Fortunately,
   \footcode{sb-ext:typexpand} also returns a Boolean indicating whether or not
   an expansion happened.}.
 
-\newcommand\ststpscale{0.5}
 \begin{figure}
   \centering
-  \includegraphics[scale=\ststpscale]{assets/19/stGTstp}
-  \includegraphics[scale=\ststpscale]{assets/19/stEQstp}
+  \newcommand\profgraph[1]{\includegraphics[width=4.20cm,height=3.75cm]{#1}}
+  \fcolorbox{white}{white}{
+    \profgraph{assets/19/stGTstp}
+    \profgraph{assets/19/stEQstp}
+  }
   \caption{\code{specifier-type} weight in \code{subtypep} execution}
   \label{fig:specifiertype}
   % \label{fig:stGTstp}
 \end{figure}
-%% NOTE perhaps separate the images in two distinct figures
-% \begin{figure}
-%   \centering
-%   \includegraphics[scale=\ststpscale]{assets/19/stEQstp}
-%   \caption{\code{specifier-type} weight in \code{subtypep} execution}
-%   \label{fig:stEQstp}
-% \end{figure}
 
 \subsection{Numeric type specifiers conversion}
 \label{sec:numconv}
