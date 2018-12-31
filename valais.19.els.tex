@@ -674,7 +674,7 @@ instances. However, to create a class prototype, the class needs to be
 \emph{finalized} and it cannot be guaranteed until it is instantiated.
 Since that class may be involved in a \code{subtypep} call before that happens,
 when a new class is encountered, we force its finalization using the function
-\code{ensure-finalized} from the (portable) \code{closer-mop} package.
+\code{ensure-finalized} from the (portable) \code{closer-mop} package \cite{bib:costanza.c2mop}.
 Then, we create the prototype of the class using \code{sb-mop:class-prototype}
 and register it. This method is much more portable than Baker's and does not
 require to hook inside the implementation. Since conditions are classes, they
