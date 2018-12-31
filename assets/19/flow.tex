@@ -20,7 +20,7 @@
   \node[andnot,below=2 of middle] (andnotL) {(and l-t-1 (not l-t-2))};
   \node[action,below=of andnotL] (reg) {missing types registration};
   \node[action,below=of reg] (bv) {bit-vector computation};
-  \node[action,below=of bv] (nullbv) {= $[0\ 0\ \cdots\ 0]$?};
+  \node[action,below=of bv] (nullbv) {= $[0,0,\cdots,0]$?};
 
   \node[andnot,below=1 of nullbv] (andnotR) {(and r-t-1 (not r-t-2))};
   \node[action,below=of andnotR] (red) {type diversity reduction};
