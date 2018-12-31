@@ -668,7 +668,8 @@ these classes are likely to appear in a \code{subtypep} type specifier.
 We decided instead to use the \emph{Meta Object Protocol} (\textsc{Mop})
 \cite{bib:kiczales.91.book}, more specifically \emph{class prototypes}. Class
 prototypes are pseudo-instances of a class, created without executing
-\code{initialize-instance} and which \code{typep} and \code{eql} view as traditional
+\code{initialize-instance} (thus avoiding undesirable side-effects) and
+which \code{typep} and \code{eql} view as traditional
 instances. However, to create a class prototype, the class needs to be
 \emph{finalized} and it cannot be guaranteed until it is instantiated.
 Since that class may be involved in a \code{subtypep} call before that happens,
@@ -676,9 +677,12 @@ when a new class is encountered, we force its finalization using the function
 \code{ensure-finalized} from the (portable) \code{closer-mop} package.
 Then, we create the prototype of the class using \code{sb-mop:class-prototype}
 and register it. This method is much more portable than Baker's and does not
-require to hook inside the implementation. In \sbcl{} and other major Common
-Lisp implementations, structures and conditions are implemented as classes so no
-additional work is required. But that solution is not fully portable either.
+require to hook inside the implementation. Since conditions are classes, they
+are supported automatically. The Common Lisp standard \cite{bib:ansi.94.cl}
+states that ``\code{defstruct} without a \code{:type} option defines a class
+with the structure name as its name'', hence in that case no additional work is
+required. Our implementation does not support the other cases (\code{:type}
+being either \code{list}, \code{vector} or \code{(vector $T$)}).
 
 Each time a \code{member} type specifier is encountered, we must ensure that we
 generate a new representative element whenever we try to register a
