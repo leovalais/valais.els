@@ -117,25 +117,23 @@ The Common Lisp standard \cite{bib:ansi.94.cl} provides the predicate function
 \code{subtypep} for
 introspecting the sub-typing relationship. Every invocation \code{(subtypep A B)}
 either returns the values \code{(t t)} when \code{A} is a sub-type of \code{B},
-\code{(nil t)} when not or \code{(nil nil)} meaning the predicate could not
+\code{(nil t)} when not, or \code{(nil nil)} meaning the predicate could not
 (or failed to) answer the question. The latter can happen when the type
 specifier \code{(satisfies P)} (representing the type $\{x \mid
 \mathtt{P(x)}\}$ for some predicate and total function\footnote{A function
   defined over its entire definition domain.} \code{P}) is involved. For example,
-there is indeed no way for the function to answer anything else than \code{(nil
-  nil)} for any arbitrary predicates \code{F} and \code{G} to the question
-\code{(subtypep '(satisfies F) '(satisfies G))}.
+given two arbitrary predicates \code{F} and \code{G}, there is no way
+\code{subtypep} can answer the question \code{(subtypep '(satisfies F)
+  '(satisfies G))}.
 
-However some implementations abuse of the permission to return \code{(nil nil)}.
+However, some implementations abuse of the permission to return \code{(nil nil)}.
 For example, in \sbcl{} (the implementation we are currently focusing our
 efforts on), {\small\code{(satisfies 'boolean 'keyword)}} returns
 \code{(nil nil)}, thus violating the standard\footnote{The Common Lisp standard
   requires that no invocation of \footcode{subtypep} involving only primitive types
   returns \footcode{(nil nil)}.}. The definition of the \code{keyword} type is
-responsible for the failure: as shown in \vref{lst:keyword}, it
-involves a \code{satisfies} type specifier. Therefore any type-based
-optimization involving determining whether \code{boolean} is a sub-type of
-\code{keyword} is lost.
+responsible for this failure: as shown in \vref{lst:keyword}, it
+involves a \code{satisfies} type specifier.
 
 Another kind of problem for which \code{subtypep}'s accuracy matters is the
 optimization of the \code{typecase} construct as shown in \cite{newton.18.phd}
@@ -149,15 +147,15 @@ Our implementation is still in active development, currently targets
 \sbcl{} and focuses almost entirely on results accuracy. It supports
 \emph{primitive} types, \emph{user-defined} types (\code{deftype}, classes and structures),
 \emph{\code{member} (and \code{eql})} type specifiers and \emph{ranges} (e.g.,
-\code{(integer * 12)}). We will present our strategy for implementing each one
+\code{(integer * 12)}). We present our strategy for implementing each one
 of these while discussing how and why we decided or not to diverge from Baker's
 \cite{baker1992}
 approach---or potentially filling some gaps or unclear bits.
 No optimization work has been done yet and the implementation still has
-bugs and diverse issues but we have found some encouraging results about
+bugs and diverse issues, but we have found some encouraging results about
 accuracy and even about efficiency.
 
-\begin{listing}[!p]
+\begin{listing}
   \begin{clcode}
 (sb!xc:deftype keyword ()
   '(and symbol (satisfies keywordp)))
