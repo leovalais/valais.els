@@ -39,13 +39,13 @@
 
 \title{Implementing Baker's SUBTYPEP decision procedure}
 
-\author{Jim E. Newton}
-\email{jnewton@lrde.epita.fr}
-\orcid{0000-0002-1595-8655}
-
 \author{Léo Valais}
 \email{lvalais@lrde.epita.fr}
 \orcid{0000-0000-0000-0000}
+
+\author{Jim E. Newton}
+\email{jnewton@lrde.epita.fr}
+\orcid{0000-0002-1595-8655}
 
 \author{Didier Verna}
 \email{didier@lrde.epita.fr}
@@ -167,13 +167,15 @@ accuracy and even about efficiency.
 
 \section{The Common Lisp type system}
 \subsection{Type specifiers}
-We can equivalently speak of types and sets and Common Lisp types are no
-exception. They are not manipulated directly. Instead, the type to be
+% We can equivalently speak of types and sets and Common Lisp types are no
+% exception. They are not manipulated directly.
+Common Lisp types are not manuputlated directly as they are in other languages
+such as C++. Instead, the type to be
 manipulated is \emph{described} using a \emph{type specifier}.
-The type specifier DSL (Domain-Specific Language) allows the programmer to
+The type specifier Domain-Specific Language (DSL) allows the programmer to
 describe types by writing S-expressions which obey some rules described in the
 Common Lisp standard \cite{bib:ansi.94.cl} and roughly summarized by the
-\vref{tab:ts}\footnote{More type specifiers exist. We do not describe them either
+\vref{tab:ts}\footnote{More type specifiers exist. We do not describe them here either
   because they are not implemented or because Baker's procedure ignores them as well.}.
 
 A subtlety about this mechanism is that \emph{different type specifiers} can
@@ -263,11 +265,11 @@ Follows some vocabulary, notations and conventions used in this article.
   \item[compound form] A type specifier which type is \code{list}.
   \item[logic type] A top-level union, intersection or complement.
   \item[literal type] A type specifier that only contains symbolic types,
-    \code{member} types and logic compound forms.
+    \code{member} types, and logic compound forms.
   \item[interval] A mathematical interval that may not be a valid type specifier.
   \item[range type] A type specifier that only contains ranges and logic compound forms.
 
-  \item[type $\approx$ t.s.] When no confusion is possible we take the right to
+  \item[type $\approx$ t.s.] When no confusion is possible we allow ourselves to
     write type specifiers where a mathematical type is expected and to use a type
     variable, say $T$, as a placeholder inside Lisp code for \emph{a type
       specifier describing} $T$.
@@ -345,11 +347,9 @@ result of an expansion may itself be an alias to expand\footnote{Fortunately,
 
 \begin{figure}
   \centering
-  \newcommand\profgraph[1]{\includegraphics[width=4.20cm,height=3.75cm]{#1}}
-  \fcolorbox{white}{white}{
-    \profgraph{assets/19/stGTstp}
-    \profgraph{assets/19/stEQstp}
-  }
+  \newcommand\profgraph[1]{\includegraphics[scale=.40]{#1}}
+  \profgraph{assets/19/stGTstp}
+  \profgraph{assets/19/stEQstp}
   \caption{\code{specifier-type} weight in \code{subtypep} execution}
   \label{fig:specifiertype}
   % \label{fig:stGTstp}
