@@ -284,9 +284,10 @@ detailed in the following sections. There are three \emph{major stages}:
 
 \begin{enumerate}
 \item \emph{The pre-processing} --- Both type specifiers are processed in order to
-  simplify further calculations: the aliases are expanded, each occurrence of
-  numeric types are converted to their equivalent range type specifier and the
-  type specifier is finally split. This stage is detailed in % section
+  simplify further calculations: the aliases are expanded, and each occurrence
+  of numeric types are converted to their equivalent range type specifier.
+  Finally, the type specifier is split into reduced type specifiers, each
+  restricted to their respective kingdom. This stage is detailed in
   \vref{sec:pre}.
 \item \emph{Expert sub-procedures} --- Once split, each sub-type specifier is
   redirected to the appropriate expert sub-procedure. Such procedures' job is to
@@ -310,11 +311,11 @@ detailed in the following sections. There are three \emph{major stages}:
 \label{sec:pre}
 \subsection{Alias expansion}
 The very first step is to ensure that the type specifier is in its
-\emph{canonical form}, that is, having all its aliases expanded. For example,
-considering the type created in \vref{lst:deftype},
-\code{(expand '(except 12))} should return \code{(not (eql 12))}.
+\emph{canonical form}, that is, having all its aliases expanded. This is done by
+the \code{expand} function. For example, considering the type created in
+\vref{lst:deftype}, \code{(expand '(except 12))} should return \code{(not (eql 12))}.
 
-Unlike for the macro expansion, the \code{deftype} expansion is not
+Unlike macro expansion, \code{deftype} expansion is not
 standardized. Thus a solution must be found for each implementation
 independently. As our efforts are focused on \sbcl{} (yet), we discuss how we
 implement the \code{expand} function for that compiler.
