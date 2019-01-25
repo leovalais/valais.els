@@ -174,7 +174,7 @@ such as C++. Instead, the type to be
 manipulated is \emph{described} using a \emph{type specifier}.
 The type specifier Domain-Specific Language (DSL) allows the programmer to
 describe types by writing S-expressions which obey some rules described in the
-Common Lisp standard \cite{bib:ansi.94.cl} and roughly summarized by the
+Common Lisp standard \cite{bib:ansi.94.cl} and roughly summarized in
 \vref{tab:ts}\footnote{More type specifiers exist. We do not describe them here either
   because they are not implemented or because Baker's procedure ignores them as well.}.
 
@@ -315,10 +315,10 @@ The very first step is to ensure that the type specifier is in its
 the \code{expand} function. For example, considering the type created in
 \vref{lst:deftype}, \code{(expand '(except 12))} should return \code{(not (eql 12))}.
 
-Unlike macro expansion, \code{deftype} expansion is not
-standardized. Thus a solution must be found for each implementation
-independently. As our efforts are focused on \sbcl{} (yet), we discuss how we
-implement the \code{expand} function for that compiler.
+Unlike macro expansion, \code{deftype} expansion is not standardized in Common
+Lisp. Thus a solution must be found for each implementation
+independently. As our efforts are currently focused on \sbcl{}, we discuss
+how we implement the \code{expand} function for that compiler.
 
 \sbcl's \code{subtypep} heavily relies on the function
 \code{sb-kernel:specifier-type}, which does type expansion. It also does
@@ -341,10 +341,15 @@ specifier if it is not expandable. \code{(sb-ext:typexpand 'integer)} returns
 \code{integer} since it is not a \code{deftype} alias whereas
 \code{(sb-ext:typexpand '(except 12))} returns \code{(not (eql 12))}.
 To expand a whole type specifier, it just needs to go through it, applying
-\code{sb-ext:typexpand} on each list or atom. One subtlety though is that the
-result of an expansion may itself be an alias to expand\footnote{Fortunately,
-  \footcode{sb-ext:typexpand} also returns a Boolean indicating whether or not
-  an expansion happened.}.
+\code{sb-ext:typexpand} on each list or atom manually. One subtlety though is
+that the result of an expansion may itself be an alias to
+expand\footnote{%
+  Fortunately, \footcode{sb-ext:typexpand} also returns a Boolean indicating
+  whether or not an expansion happened.%
+}. For example, let's say that we have
+\code{(deftype my-type () '(except 0.0))}, then the result of
+\code{(sb-ext:typexpand 'my-type)} is \code{(except 0.0)}, which is of course an
+alias to expand again.
 
 \begin{figure}
   \centering
@@ -374,12 +379,16 @@ to describe numerical data.
 
 \begin{itemize}
 \item \emph{Symbolic} numeric type specifier --- say \code{U}, replace it by
-  \code{(U * *)}\footnote{Implementations supporting the IEEE floating point
+  \code{(U * *)}\footnote{%
+    Implementations supporting the IEEE floating point
     raise many concerns with \footcode{-0.0}, $NaN$, $+\infty$ and $-\infty$.
     Baker explains in detail how to handle these cases, which our implementation
-    (FIXME is that completely true?)
-    does not support yet.}. Note the new ``type specifier'' is likely
-  \emph{not} to be valid (e.g., \code{(fixnum * *)} is invalid).
+    does not support yet. (\sbcl{} does not implement that specification.)%
+  }. Note the new ``type specifier'' is likely
+  \emph{not} to be valid (e.g., \code{(fixnum * *)} is invalid). Because it is
+  never exposed to the user---as it is an intermediate, internal
+  representation---nothing bad can happen. However, it cannot be used with other
+  functions requiring a type specifier, such as \code{typep}.
 \item \code{member} type specifiers --- e.g., \code{(member a 1 2 :b)} is
   converted to \code{(or (member a :b) (bit 1 1) (integer 2 2))}.
   To do that,
@@ -394,25 +403,24 @@ to describe numerical data.
 \end{itemize}
 
 A subtlety to consider is that \textit{super-types} of \code{number} also
-contain numerical data that must be extracted. Indeed, the type specifier
+contain numerical data that must be extracted. Indeed, the type
 \code{atom} contains both numerical data---\code{(number * *)}---and non-numerical
-data---\code{(and atom (not (number * *)))}. Unfortunately the latter
-expression cannot be used since it uses the \code{atom} type specifier and
-recursively converting that replacement would result in a infinite computation
-loop. Thus \code{atom} must first be replaced by its sum type representation,
-that is \code{(or stream array character function standard-object symbol
-  structure-object structure-class (number * *))} before being recursively
-converted. Similarly, the other super-type of \code{number}, the type \code{t}
-must be replaced by \code{(or atom sequence)}.
+data---\code{(and atom (not (number * *)))}.
+Thus, its replacement in the numeric type kingdom is straightforward:
+\code{(number * *)}. In the literal type kingdom however, its replacement is
+\code{(or stream array character function standard-object symbol
+  structure-object structure-class)}.
+The type \code{t}---which is \code{(or atom sequence)}---must be
+converted similarily.
 
 Yet another subtlety is that the type specifiers \code{(and)} and
 \code{(or)} respectively describe the types \code{t} and \code{nil}. Hence
 every occurrence of \code{(and)} must be replaced by the replacement of
 \code{t} described in the last paragraph. In order to remove that annoying
-corner case completely, \code{(or)} is also replaced (by \code{nil}).
+corner case completely, \code{(or)} is also replaced, by \code{nil}.
 
 \subsection{Splitting}
-Reached this step, the input only contains \emph{canonical} \emph{literal} and
+Reached this step, the input now only contains \emph{canonical} \emph{literal} and
 \emph{range} type specifiers, numeric types being \emph{only} expressed as
 ranges. The next stage---expert sub-procedures---requires literal and numeric
 types to be separated.
@@ -485,7 +493,7 @@ The results of the \code{split} function are zipped together using
 sub-procedures. This way, they will not have to prove that an arbitrary type is a
 sub-type of \emph{another} arbitrary sub-type, but rather whether \emph{one}
 arbitrary type specifier describes the empty type (which is substantially
-easier to reason about and implement).
+easier to reason about, and implement).
 
 \section{Expert sub-procedures}
 \label{sec:exp}
