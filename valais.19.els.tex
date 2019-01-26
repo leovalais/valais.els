@@ -286,9 +286,12 @@ detailed in the following sections. There are three \emph{major stages}:
 \item \emph{The pre-processing} --- Both type specifiers are processed in order to
   simplify further calculations: the aliases are expanded, and each occurrence
   of numeric types are converted to their equivalent range type specifier.
-  Finally, the type specifier is split into reduced type specifiers, each
-  restricted to their respective kingdom. This stage is detailed in
-  \vref{sec:pre}.
+  Finally, as explained thereafter, the procedure splits into several
+  sub-procedures, one for each type kingdom, because their internal
+  type representation differ. In order to achieve that, the type specifiers must
+  also be split into equivalent sub-type specifiers restricted to each kingdom
+  concerned.
+  This stage is detailed in \vref{sec:pre}.
 \item \emph{Expert sub-procedures} --- Once split, each sub-type specifier is
   redirected to the appropriate expert sub-procedure. Such procedures' job is to
   determine, in its own \emph{kingdom} in Baker's terminology, whether or not it
@@ -365,7 +368,7 @@ alias to expand again.
 \label{sec:numconv}
 As explained in \vref{sec:flow}, after pre-processing both type specifiers, the
 procedure splits in two expert sub-procedures: one for literal type specifiers
-and one for range type specifiers, because their internal representation differ.
+and one for range type specifiers.
 Numeric types---types containing numbers (mathematically speaking)---can have
 different representations: a \emph{symbol} (e.g., \code{fixnum}), a \emph{range}
 (e.g., \code{(integer 1 6)}) or a \emph{\code{member} expression}
