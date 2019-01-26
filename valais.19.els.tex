@@ -23,6 +23,7 @@
 \newminted{cl}{autogobble,breaklines,escapeinside=||,fontsize=\small}
 
 \newcommand\code[2][\small]{\sloppy\texttt{#1#2}}
+\newcommand\mcode[2][\small]{\text{\code[#1]{#2}}}
 \newcommand\footcode[1]{\code[\scriptsize]{#1}}
 
 \theoremstyle{definition}
@@ -444,7 +445,6 @@ the implementation of \cite{bib:norvig.92.paip} for its simplicity and versatili
 Our implementation uses a function \code{type-keep-if} which takes a predicate
 $P$ and a type specifier $T$ and returns:
 \begin{itemize}
-  \newcommand\mcode[1]{\text{\code{#1}}}
 \item $T$ as it is when $P(T) = \top$,
 \item \code{nil} when $P(T) = \bot$,
 \item \code{($op$ $U_1$ $\cdots$ $U_n$)}
@@ -468,7 +468,7 @@ Therefore, \code{split} can easily be implemented in terms of
   (list (type-keep-if #'literal-type-p type)
         (type-keep-if #'range-type-p type)))
 \end{clcode}
-\asterism
+\medskip
 \begin{clcode}
 SLIME> (split 'symbol)
 ;; (SYMBOL NIL)
@@ -561,7 +561,7 @@ which Baker ignores in his article, in \vref{sec:expoth}.
 
 \subsection{Procedure for literal types}
 \label{sec:explit}
-\subsubsection{Concept}
+\subsubsection{Theory}
 To represent types in the literal types kingdom, we suppose at first that there
 is a way to enumerate every element in \code{t}, say $e_1, e_2, \dots, e_\omega$.
 Then, let $t_1, t_2, \dots, t_\omega$ be all the (non-strict) sub-types of the
@@ -630,7 +630,7 @@ on each logic type specifier using the appropriate Boolean operation. Finally,
 we compare the bit-vector against the bit-vector of \code{nil}, that is
 $\left[0, 0, \dots, 0\right]$, and return the result.
 
-\subsubsection{In practice}
+\subsubsection{Implementation}
 Common Lisp cannot enumerate all the possible sub-types of \code{t} nor all of
 its elements. Fortunately we do not need them all. We only need to consider the
 types present in the input type specifier to determine its emptiness.
@@ -652,71 +652,8 @@ for that kind of problem with \code{member} type specifiers is to register
 \emph{all} the elements. When there is a conflicting element $e$ already
 registered as a representative for another types, we generate additional
 representatives for these types. That precaution ensures that this kind of
-conflict never happen and simplify greatly the implementation of \code{member}
+conflict never happens and simplifies greatly the implementation of \code{member}
 type specifiers.
-
-\subsubsection{Implementation concerns}
-The method for choosing the representative elements for a type depends of its
-nature: it can be a primitive type, a user-defined type (class, structure or
-condition) or a \code{member} expression.
-
-Since primitive types are known, their representative elements are chosen at
-compile-time. The $t_{n+1}$ subtlety above should still be kept in mind. For
-instance, the type \code{null} is a sub-type of both \code{symbol} and
-\code{list} so three representative elements are needed: \code{nil}, a non-empty
-list and a symbol other than \code{nil}. Note that some primitive types are an
-\emph{exhaustive partition} of other types (e.g., \code{character}).
-Obviously, in that case, such a precaution does not apply.
-
-For user-defined types, Baker suggests to extend the type creation mechanism to
-register a dummy element as a representative. We decided \emph{not} to follow
-his approach because of the poor portability of his solution. Indeed, this
-work, often non-trivial, would have to be repeated for each targeted Common Lisp
-implementation. Moreover, it would register a representative for \emph{every}
-class created, thus increasing bit-vectors' size uselessly since only a few of
-these classes are likely to appear in a \code{subtypep} type specifier.
-We decided instead to use the \emph{Meta Object Protocol} (\textsc{Mop})
-\cite{bib:kiczales.91.book}, more specifically \emph{class prototypes}. Class
-prototypes are pseudo-instances of a class, created without executing
-\code{initialize-instance} (thus avoiding undesirable side-effects) and
-which \code{typep} and \code{eql} view as traditional
-instances. However, to create a class prototype, the class needs to be
-\emph{finalized} and it cannot be guaranteed until it is instantiated.
-Since that class may be involved in a \code{subtypep} call before that happens,
-when a new class is encountered, we force its finalization using the function
-\code{ensure-finalized} from the (portable) \code{closer-mop} package \cite{bib:costanza.c2mop}.
-Then, we create the prototype of the class using \code{sb-mop:class-prototype}
-and register it. This method is much more portable than Baker's and does not
-require to hook inside the implementation. Since conditions are classes, they
-are supported automatically. The Common Lisp standard \cite{bib:ansi.94.cl}
-states that ``\code{defstruct} without a \code{:type} option defines a class
-with the structure name as its name'', hence in that case no additional work is
-required. The standard also states that ``Specifying this option [...] prevents
-the structure name from becoming a valid type specifier recognizable by
-\code{typep}.'' Thus, \code{subtypep} is not concerned by these types of
-structures.
-
-Each time a \code{member} type specifier is encountered, we must ensure that we
-generate a new representative element whenever we try to register a
-\code{member} element already registered. The Common Lisp standard
-\cite{bib:ansi.94.cl} states that the \code{member} type specifier is defined in
-terms of \code{eql}. That is, \code{(typep $e$ '(member $e_1$ $\cdots$ $e_n$))}
-uses \code{eql} to compare $e$ to the successive $e_k$ to check the membership.
-Fortunately, within the literal types kingdom, the only problematic types are
-\code{character} and \code{symbol} since the representatives are not supposed to
-be accessible to the user of \code{subtypep}. (E.g., the representative of the
-type \code{list} \code{(1 2 3)} is not \code{eql} to the list inside
-\code{(member (1 2 3))}.) Therefore, only the representatives of these types
-need to be actually checked when registering \code{member}'s elements.
-To generate a new symbol, we use \code{alexandria:symbolicate}.
-(The \code{keyword} sub-type of symbol is also subject to the problem.)
-To generate a new character, we first need to know whether it is a
-\code{base-char} or an \code{extended-char}. Then we pick a character of that
-type not registered yet. When all the characters of that type are registered
-there is nothing to do (since the type is fully represented in the matrix, no
-misinterpretation can occur). We have not addressed the problem of a type
-specifier involving a user class $C$ and a \code{member} expression containing
-the class prototype of $C$ yet.
 
 To implement that registration matrix system, we use two functions:
 \sloppy${B : \text{type name} \longmapsto \text{bit-vector}}$,
@@ -737,6 +674,117 @@ user-defined type $t$, we just lookup its value $B(t)$. To compute the
 bit-vector of a \code{member} expression \code{(member $e_1$ $\cdots$ $e_n$)},
 we use the value $\bigvee_{i=1}^n \beta\left(I\left(e_i\right)\right)$, where
 $\beta(x)$ returns the null 0-based bit-vector with the $x$-th bit activated.
+
+\subsubsection{Issues}
+\label{sec:issues}
+The method for choosing the representative elements for a type depends of its
+nature: it can be a primitive type, a user-defined type (class, structure or
+condition) or a \code{member} expression.
+
+Since primitive types are known, their representative elements are chosen at
+compile-time. The $t_{n+1}$ subtlety above should still be kept in mind. For
+instance, the type \code{null} is a sub-type of both \code{symbol} and
+\code{list} so three representative elements are needed: \code{nil}, a non-empty
+list and a symbol other than \code{nil}. Note that some primitive types are an
+\emph{exhaustive partition} of other types (e.g., \code{character}).
+Obviously, in that case, such a precaution does not apply.
+
+For user-defined types, Baker suggests to extend the type creation
+mechanism---thus modifying the implementation's internal functions---to
+register a dummy element as a representative. We decided \emph{not} to follow
+his approach because of the poor portability of his solution. Indeed, this
+work, often non-trivial, would have to be repeated for each targeted Common Lisp
+implementation. Moreover, it would register a representative for \emph{every}
+class created, thus increasing bit-vectors' size uselessly since only a few of
+these classes are likely to appear in a \code{subtypep} type specifier.
+But more importantly, the main drawback of his solution is that creating that
+dummy element might have unexpected side-effects, as it may need to use slot's
+default values or/and \code{initialize-instance}.
+We decided instead to use the \emph{Meta Object Protocol} (\textsc{Mop})
+\cite{bib:kiczales.91.book}, more specifically \emph{class prototypes}. Class
+prototypes are pseudo-instances of a class, created without executing
+\code{initialize-instance} and which \code{typep} and \code{eql} view as
+traditional instances. However, to create a class prototype, the class needs to
+be \emph{finalized} and it cannot be guaranteed until it is instantiated.
+Since that class may be involved in a \code{subtypep} call before that happens,
+when a new class is encountered, we force its finalization using the function
+\code{ensure-finalized} from the (portable) \code{closer-mop} package\footnote{
+  \url{http://common-lisp.net/project/closer/}
+}.
+Then, we create the prototype of the class using \code{sb-mop:class-prototype}
+and register it. This method is much more portable than Baker's and does not
+require to hook inside the implementation. Since (in \sbcl) conditions are
+classes, they are supported automatically. The Common Lisp standard
+\cite{bib:ansi.94.cl} states that ``\code{defstruct} without a \code{:type}
+option defines a class with the structure name as its name'', hence in that case
+no additional work is required. The standard also states that ``Specifying this
+option [...] prevents the structure name from becoming a valid type specifier
+recognizable by \code{typep}.'' Thus, \code{subtypep} is not concerned by these
+types of structures.
+
+To address the misrepresentation problem when \code{member} type specifiers are
+involved, as discussed in \vref{sec:issues}, we must ensure that a new
+representative element is generated and registered. The Common Lisp
+standard (\cite{bib:ansi.94.cl}) states that the \code{member} type specifier is
+defined in terms of \code{eql}. That is, \code{(typep $e$ '(member $e_1$
+  $\cdots$ $e_n$))} uses \code{eql} to compare $e$ to the successive $e_k$ to
+check the membership. That precise property reduces the misrepresentation
+problem to only two types: \code{symbol} and \code{character} (and their
+sub-types).
+
+To better understand why it is the case, first consider a reduced version of the
+top-level type \code{t}: \code{t} = \code{(or string list symbol)}. Then, let
+$R$ = \code{("hello" (1 2 3) foo)} be our list of representatives.
+\begin{enumerate}
+\item Let's ask the question \code{(subtypep 'symbol '(member foo))}.
+\item As discussed in \vref{sec:issues}, we add the elements of the
+  \code{member} expression to $R$. To conform with the specification, we first
+  check whether or not \code{foo} is already in $R$ \code{eql}-wise:
+  $\mcode{foo} \in_{\mcode[\scriptsize]{eql}} R$, so $R$ does not change.
+\item As shown in \vref{eq:symbol}, the emptiness check passes, meaning that
+  \code{symbol} is indeed a sub-type of \code{(member foo)}, which is obviously
+  wrong.
+  \begin{align}
+    B(\mcode{symbol}) \wedge \neg B(\mcode{(member foo)}) &= 001 \wedge \neg 001 \label{eq:symbol}\\
+                                                          &= 001 \wedge 110 \nonumber\\
+                                                          &= 000 \nonumber\\
+                                                          &= B(\mcode{nil}) \nonumber
+  \end{align}
+\end{enumerate}
+
+However, for lists, that problem does not appear, thanks to the \code{eql}-wise
+comparison.
+\begin{enumerate}
+\item \code{(subtypep 'list '(member (1 2 3)))}
+\item $\mcode{(1 2 3)} \not\in_{\mcode[\scriptsize]{eql}} R \Rightarrow R =
+  \mcode{("hello" (1 2 3) foo (1 2 3))}$
+\item As shown in \vref{eq:list}, the emptiness check fails and the answer is
+  correct.
+  \begin{align}
+    B(\mcode{list}) \wedge \neg B(\mcode{(member (1 2 3))}) &= 0101 \wedge \neg 0001 \label{eq:list}\\
+                                                            &= 0101 \wedge 1110 \nonumber\\
+                                                            &= 0100 \nonumber\\
+                                                            &\not= B(\mcode{nil}) \nonumber
+  \end{align}
+\end{enumerate}
+
+Within the literal types kingdom, the only types for which this problem
+occurs---since the representatives are not supposed to be accessible to the user
+of \code{subtypep}---are then \code{symbol} and \code{character}.
+Therefore, only the representatives of these types need to be actually checked
+when registering \code{member}'s elements.
+
+To generate a new symbol, we use \code{alexandria:symbolicate}.
+The \code{keyword} sub-type of \code{symbol} is also subject to the problem.
+(Actually, solving the problem for keywords also solves the problem for
+symbols.)
+To generate a new character, we first need to know whether it is a
+\code{base-char} or an \code{extended-char}. Then we pick a character of that
+type not registered yet. When all the characters of that type are registered
+there is nothing to do (since the type is fully represented in the matrix, no
+misinterpretation can occur). We have not addressed the problem of a type
+specifier involving a user class $C$ and a \code{member} expression containing
+the class prototype of $C$ yet.
 
 % NOTE Perhaps talk about doubling the size of bit-vector instead of adding one
 % bit each time.
