@@ -803,16 +803,17 @@ such as \sbcl.
 
 Array type specifiers are complex to handle because it is bi-dimensional: it
 has an element type and bounds (e.g., \code{(array integer (* 2 *))}).
-Internally, Common Lisp implementations does not store which exact type
+Internally, Common Lisp implementations do not store which exact type
 specifier is specified but rather only store the result of the function
 \code{upgraded-array-element-type} returns giving that type. E.g, for
 \code{(make-array 2 :element-type 'list)}, the implementation does not makes an
 array of \code{list} but rather an array of \code{(upgraded-array-element-type
   'list)} = \code{T}. For every type that might return this function, Baker
-requires that we store a matrix of bits because of the complex bounds logic of
-the type specifier. As for the literal type procedure, it seems to be an
-efficient type representation system---albeit more complex---which nonetheless
-requires an extra registration step and a global state.
+requires that we store a bit matrix (instead of bit vectors) because of the
+complex bounds logic of the type specifier. As for the literal type procedure,
+it seems to be an efficient type representation system---albeit more
+complex---which nonetheless requires an extra registration step and a global
+state.
 
 Baker does not mention the \code{cons} type specifier family at all in his
 article because it appeared after he released his article \cite{gcl-devel.cons}.
