@@ -500,11 +500,11 @@ easier to reason about, and implement).
 
 \section{Expert sub-procedures}
 \label{sec:exp}
-\vref{lst:tdstp} shows how \code{subtypep} could be defined from a top down
+\vref{lst:tdstp} shows how \code{subtypep} could be defined from a top-down
 point of view. It shows that, according to \vref{fig:flow}, both type
 specifiers are processed independently, split into two kingdoms (literal and
 numeric types) and unified in an \code{(and U (not V))} fashion. The
-expert sub-procedures, \code{literal-type-nil-p} and \code{numeric-type-nil-p},
+expert sub-procedures, \code{null-literal-type-p} and \code{null-numeric-type-p},
 each accept one argument---a type specifier, say $T$---and returns a Boolean
 indicating whether $T$ describes the empty type (\code{nil}).
 
@@ -541,7 +541,7 @@ represent the empty range witch complement is \code{(number * *)}.
 In the following sections we describe in detail the implementation of the expert
 sub-procedures for the literal (\vref{sec:explit}) and numeric
 (\vref{sec:expnum}) type kingdoms. We also briefly discuss
-about the array type kingdom and the \code{cons} type specifier family,
+the array type kingdom and the \code{cons} type specifier family,
 which Baker ignores in his article, in \vref{sec:expoth}.
 
 \begin{listing}
@@ -550,8 +550,8 @@ which Baker ignores in his article, in \vref{sec:expoth}.
   (reduce (lambda (x y) (and x y))
           (mapcar (lambda (expert t1 t2)
                     (funcall expert `(and ,t1 (not ,t2))))
-                  (list #'literal-type-nil-p
-                        #'numeric-type-nil-p)
+                  (list #'null-literal-type-p
+                        #'null-numeric-type-p)
                   (split (num-types->ranges (expand a)))
                   (split (num-types->ranges (expand b))))))
 \end{clcode}
@@ -623,7 +623,7 @@ illustrates the system.
   \end{enumerate}
 \end{proof}
 
-On each \code{literal-type-nil-p} call, we lookup each symbolic type
+On each \code{null-literal-type-p} call, we lookup each symbolic type
 specifiers' (e.g., \code{symbol}) and \code{member} expressions' (roughly
 anonymous types) bit-vectors in the matrix, combine these
 on each logic type specifier using the appropriate Boolean operation. Finally,
