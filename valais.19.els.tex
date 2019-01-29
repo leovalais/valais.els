@@ -119,7 +119,7 @@
 The Common Lisp standard \cite{bib:ansi.94.cl} provides the predicate function
 \code{subtypep} for
 introspecting the sub-typing relationship. Every invocation \code{(subtypep A B)}
-either returns the values \code{(t t)} when \code{A} is a sub-type of \code{B},
+either returns the values \code{(t t)} when \code{A} is a subtype of \code{B},
 \code{(nil t)} when not, or \code{(nil nil)} meaning the predicate could not
 (or failed to) answer the question. The latter can happen when the type
 specifier \code{(satisfies P)} (representing the type $\{x \mid
@@ -276,7 +276,7 @@ Follows some vocabulary, notations and conventions used in this article.
     write type specifiers where a mathematical type is expected and to use a type
     variable, say $T$, as a placeholder inside Lisp code for \emph{a type
       specifier describing} $T$.
-  \item[$T \subseteq T'$] The \emph{type} $T$ is a non-strict sub-type of $T'$.
+  \item[$T \subseteq T'$] The \emph{type} $T$ is a non-strict subtype of $T'$.
     We always have \code{(subtypep $T$ $T'$)}.
 \end{description}
 
@@ -292,13 +292,13 @@ detailed in the following sections. There are three \emph{major stages}:
   Finally, as explained thereafter, the procedure splits into several
   sub-procedures, one for each type kingdom, because their internal
   type representation differ. In order to achieve that, the type specifiers must
-  also be split into equivalent sub-type specifiers restricted to each kingdom
+  also be split into equivalent subtype specifiers restricted to each kingdom
   concerned.
   This stage is detailed in \vref{sec:pre}.
-\item \emph{Expert sub-procedures} --- Once split, each sub-type specifier is
+\item \emph{Expert sub-procedures} --- Once split, each subtype specifier is
   redirected to the appropriate expert sub-procedure. Such procedures' job is to
   determine, in its own \emph{kingdom} in Baker's terminology, whether or not it
-  can \emph{prove} the assertion ``$A$ is a sub-type of $B$'' to be \emph{wrong}.
+  can \emph{prove} the assertion ``$A$ is a subtype of $B$'' to be \emph{wrong}.
   Our procedures currently only supports literal and range type specifiers---an
   expert sub-procedure has been implemented only for these two kingdoms. This
   stage is detailed in \vref{sec:exp}.
@@ -434,7 +434,7 @@ types to be separated.
 Thus the top type \code{t} is divided into two\footnote{
   One per kingdom actually, but since out implementation only support
   two---literal and range types---we only focus our attention these.
-} disjoint sub-types---``kingdoms'' as Baker says. The last step, described in
+} disjoint subtypes---``kingdoms'' as Baker says. The last step, described in
 \vref{sec:numconv}, ensures the representation (in term of type specifiers) of
 the types in each kingdom is different. All numeric types are represented as
 ranges and literal types are represented as symbolic and \code{member} (without
@@ -457,10 +457,10 @@ $P$ and a type specifier $T$ and returns:
 This function, given the predicate \code{literal-type-p} and a type $T$, returns
 $T$ with every inner type specifier that describes a non-literal type
 replaced by \code{nil} (interpreted as the \textit{empty type}). The result is then a
-sub-type of \code{(and t (not number))}.
+subtype of \code{(and t (not number))}.
 Likewise, given the predicate \code{range-type-p}, this function returns $T$
 with every non-range inner type specifier replaced by \code{nil} (interpreted
-this time as the \textit{empty range}). Thus the result is a sub-type of \code{number}.
+this time as the \textit{empty range}). Thus the result is a subtype of \code{number}.
 Therefore, \code{split} can easily be implemented in terms of
 \code{type-keep-if}, as shown in \vref{lst:split}.
 
@@ -496,7 +496,7 @@ Therefore, for any type specifiers \code{U} and \code{V}, when
 The results of the \code{split} function are zipped together using
 \code{(lambda (x y) `(and ,x (not ,y)))} before being passed to the expert
 sub-procedures. This way, they will not have to prove that an arbitrary type is a
-sub-type of \emph{another} arbitrary sub-type, but rather whether \emph{one}
+subtype of \emph{another} arbitrary subtype, but rather whether \emph{one}
 arbitrary type specifier describes the empty type (which is substantially
 easier to reason about, and implement).
 
@@ -566,7 +566,7 @@ which Baker ignores in his article, in \vref{sec:expoth}.
 \subsubsection{Theory}
 To represent types in the literal types kingdom, we suppose at first that there
 is a way to enumerate every element in \code{t}, say $e_1, e_2, \dots, e_\omega$.
-Then, let $t_1, t_2, \dots, t_\omega$ be all the (non-strict) sub-types of the
+Then, let $t_1, t_2, \dots, t_\omega$ be all the (non-strict) subtypes of the
 top-level type \code{t}. We associate to each pair $\left(t_i, e_j\right)$ the
 bit $b_{ij}$ with the value $1$ when $e_j \in t_i$ and $0$ when $e_j \notin t_i$.
 Let $bv_i$ be the \emph{representative bit-vector} associated to the type $t_i$,
@@ -633,7 +633,7 @@ we compare the bit-vector against the bit-vector of \code{nil}, that is
 $\left[0, 0, \dots, 0\right]$, and return the result.
 
 \subsubsection{Implementation}
-Common Lisp cannot enumerate all the possible sub-types of \code{t} nor all of
+Common Lisp cannot enumerate all the possible subtypes of \code{t} nor all of
 its elements. Fortunately we do not need them all. We only need to consider the
 types present in the input type specifier to determine its emptiness.
 
@@ -687,7 +687,7 @@ condition) or a \code{member} expression.
 
 Since primitive types are known, their representative elements are chosen at
 compile-time. The $t_{n+1}$ subtlety above should still be kept in mind. For
-instance, the type \code{null} is a sub-type of both \code{symbol} and
+instance, the type \code{null} is a subtype of both \code{symbol} and
 \code{list} so three representative elements are needed: \code{nil}, a non-empty
 list and a symbol other than \code{nil}. Note that some primitive types are an
 \emph{exhaustive partition} of other types (e.g., \code{character}).
@@ -734,7 +734,7 @@ defined in terms of \code{eql}. That is, \code{(typep $e$ '(member $e_1$
   $\cdots$ $e_n$))} uses \code{eql} to compare $e$ to the successive $e_k$ to
 check the membership. That precise property reduces the misrepresentation
 problem to only two types: \code{symbol} and \code{character} (and their
-sub-types).
+subtypes).
 
 To better understand why it is the case, first consider a reduced version of the
 top-level type \code{t}: \code{t} = \code{(or string list symbol)}. Then, let
@@ -746,7 +746,7 @@ $R$ = \code{("hello" (1 2 3) foo)} be our list of representatives.
   check whether or not \code{foo} is already in $R$ \code{eql}-wise:
   $\mcode{foo} \in_{\mcode[\scriptsize]{eql}} R$, so $R$ does not change.
 \item As shown in \vref{eq:symbol}, the emptiness check passes, meaning that
-  \code{symbol} is indeed a sub-type of \code{(member foo)}, which is obviously
+  \code{symbol} is indeed a subtype of \code{(member foo)}, which is obviously
   wrong.
   \begin{align}
     B(\mcode{symbol}) \wedge \neg B(\mcode{(member foo)}) &= 001 \wedge \neg 001 \label{eq:symbol}\\
@@ -779,7 +779,7 @@ Therefore, only the representatives of these types need to be actually checked
 when registering \code{member}'s elements.
 
 To generate a new symbol, we use \code{alexandria:symbolicate}.
-The \code{keyword} sub-type of \code{symbol} is also subject to the problem.
+The \code{keyword} subtype of \code{symbol} is also subject to the problem.
 (Actually, solving the problem for keywords also solves the problem for
 symbols.)
 To generate a new character, we first need to know whether it is a
