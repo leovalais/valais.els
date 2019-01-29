@@ -130,13 +130,15 @@ given two arbitrary predicates \code{F} and \code{G}, there is no way
   '(satisfies G))}.
 
 However, some implementations abuse of the permission to return \code{(nil nil)}.
-For example, in \sbcl{} (the implementation we are currently focusing our
+For example, in \sbcl{} 1.4.10 (the implementation we are currently focusing our
 efforts on), {\small\code{(satisfies 'boolean 'keyword)}} returns
 \code{(nil nil)}, thus violating the standard\footnote{The Common Lisp standard
   requires that no invocation of \footcode{subtypep} involving only primitive types
   returns \footcode{(nil nil)}.}. The definition of the \code{keyword} type is
 responsible for this failure: as shown in \vref{lst:keyword}, it
-involves a \code{satisfies} type specifier.
+involves a \code{satisfies} type specifier\footnote{%
+  C.f. bug \#1533685 in \sbcl{} bug tracker.
+}.
 
 Another kind of problem for which \code{subtypep}'s accuracy matters is the
 optimization of the \code{typecase} construct as shown in \cite{newton.18.phd}
@@ -175,14 +177,15 @@ accuracy and even about efficiency.
 Common Lisp types are not manuputlated directly as they are in other languages
 such as C++. Instead, the type to be
 manipulated is \emph{described} using a \emph{type specifier}.
-The type specifier Domain-Specific Language (DSL) allows the programmer to
+The type specifier Domain-Specific Language (DSL) allows programmers to
 describe types by writing S-expressions which obey some rules described in the
 Common Lisp standard \cite{bib:ansi.94.cl} and roughly summarized in
 \vref{tab:ts}\footnote{More type specifiers exist. We do not describe them here either
-  because they are not implemented or because Baker's procedure ignores them as well.}.
+  because we do not support them yet or because Baker's procedure ignores them
+  as well.}.
 
-A subtlety about this mechanism is that \emph{different type specifiers} can
-represent the same type (e.g., \code{integer}, \code{(integer * *)} and
+A subtlety about type specifiers is that \emph{different ones} can
+represent the \textit{same} type (e.g., \code{integer}, \code{(integer * *)} and
 \code{(or fixnum bignum)} all describe the same type). It means that
 \emph{symbolic computation does not suffice} to answer the sub-typing question.
 As shown in \vref{lst:type=}, one could write a predicate, say \code{type=}, to
@@ -257,27 +260,25 @@ alias. The \vref{lst:deftype} shows an example of parametric \code{deftype}.
 \end{table*}
 
 \subsection{Vocabulary}
-Follows some vocabulary, notations and conventions used in this article.
-
 \begin{description}[leftmargin=8em,style=nextline]
-  \item[type] For any type $t$: $t \equiv \{x \mid x\!:\!t\}$
+  \item[type] A set of elements. For any type $u$: $u \equiv \{x \mid x\!:\!u\}$
   \item[canonical t.s.] A type specifier without aliases.
-  \item[primitive type] A standardized type that is not necessarily
-    implemented as a class.
-  \item[symbolic form] A type specifier which type is \code{symbol}.
-  \item[compound form] A type specifier which type is \code{list}.
-  \item[logic type] A top-level union, intersection or complement.
+  \item[primitive type] A standardized type
+    (\cite{bib:ansi.94.cl.type-specifiers}) that is not necessarily implemented
+    as a class.
+  \item[symbolic form] A type specifier whose type is \code{symbol}.
+  \item[compound form] A type specifier whose type is \code{list}.
+  \item[logical form] A type specifier whose car is \code{or}, \code{and} or \code{not}.
   \item[literal type] A type specifier that only contains symbolic types,
-    \code{member} types, and logic compound forms.
+    \code{member} types, and logical forms.
   \item[interval] A mathematical interval that may not be a valid type specifier.
-  \item[range type] A type specifier that only contains ranges and logic compound forms.
+  \item[range type] A type specifier that only contains ranges and logical forms.
 
-  \item[type $\approx$ t.s.] When no confusion is possible we allow ourselves to
-    write type specifiers where a mathematical type is expected and to use a type
-    variable, say $T$, as a placeholder inside Lisp code for \emph{a type
-      specifier describing} $T$.
-  \item[$T \subseteq T'$] The \emph{type} $T$ is a non-strict subtype of $T'$.
-    We always have \code{(subtypep $T$ $T'$)}.
+  \item[type $\approx$ t.s.] When unambiguous, we write type specifiers where a
+    mathematical type is expected and to use a type variable, say $U$, as a
+    placeholder inside Lisp code for \emph{a type specifier describing} $U$.
+  \item[$U \subseteq U'$] The type $U$ is a non-strict subtype of $U'$.
+    We always have \code{(subtypep $U$ $U'$)}.
 \end{description}
 
 \section{Procedure's mechanisms overview}
@@ -404,7 +405,7 @@ to describe numerical data.
     \code{((type-of $n$) $n$ $n$)}\footnote{\footcode{type-of} sometimes
       returns a list which \footcode{car} is the type of the range.},
   \item and combine the remaining \code{member} expression and the ranges with
-    the \code{or} logic type specifier.
+    the \code{or} logical type specifier.
   \end{enumerate}
 \end{itemize}
 
@@ -614,7 +615,7 @@ illustrates the system.
            &= \left[b_{i0} \vee b_{j0}, b_{i1} \vee b_{j1}, \dots, b_{i\omega} \vee b_{j\omega}\right]  \\
            &= bv_i \vee bv_j
     \end{align*}
-  \item We proceed similarly for the intersection and the Boolean logic operator
+  \item We proceed similarly for the intersection and the Boolean logical operator
     ``and'' ($\wedge$).
   \item Let $t_k = \overline{t_i}$. We have by definition $\forall l \in
     \mathbb{N} \cup \{\omega\}, b_{kl} = \neg b_{il}$. Then:
@@ -628,7 +629,7 @@ illustrates the system.
 On each \code{null-literal-type-p} call, we lookup each symbolic type
 specifiers' (e.g., \code{symbol}) and \code{member} expressions' (roughly
 anonymous types) bit-vectors in the matrix, combine these
-on each logic type specifier using the appropriate Boolean operation. Finally,
+on each logical type specifier using the appropriate Boolean operation. Finally,
 we compare the bit-vector against the bit-vector of \code{nil}, that is
 $\left[0, 0, \dots, 0\right]$, and return the result.
 
