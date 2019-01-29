@@ -674,8 +674,10 @@ bit (the $m$-th bit) to each bit-vector $bv_i$ and evaluate it in respect to the
 type $t_i$. Thus, to retrieve the bit-vector of a registered primitive or
 user-defined type $t$, we just lookup its value $B(t)$. To compute the
 bit-vector of a \code{member} expression \code{(member $e_1$ $\cdots$ $e_n$)},
-we use the value $\bigvee_{i=1}^n \beta\left(I\left(e_i\right)\right)$, where
-$\beta(x)$ returns the null 0-based bit-vector with the $x$-th bit activated.
+we use the value
+$B(\mcode{(member $e_1$ $\cdots$ $e_n$)}) = \bigvee_{i=1}^n
+\beta\left(I\left(e_i\right)\right)$,
+where $\beta(x)$ returns the null bit-vector with the $x$-th bit activated.
 
 \subsubsection{Issues}
 \label{sec:issues}
