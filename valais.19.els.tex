@@ -862,7 +862,7 @@ specifier is specified but rather only store the result of the function
 \code{upgraded-array-element-type} returns giving that type. E.g, for
 \code{(make-array 2 :element-type 'list)}, the implementation does not makes an
 array of \code{list} but rather an array of \code{(upgraded-array-element-type
-  'list)} = \code{T}. For every type that might return this function, Baker
+  'list)} = \code{T}. For every value that might return this function, Baker
 requires that we store a bit matrix (instead of bit vectors) because of the
 complex bounds logic of the type specifier. As for the literal type procedure,
 it seems to be an efficient type representation system---albeit more
@@ -875,7 +875,7 @@ An accurate expert sub-procedure for this kingdom would have an exponential
 complexity. More investigation is needed to assert whether or not that
 exponential time is ``acceptable'' (as it is for ranges) before rejecting it.
 The accuracy of existing \code{subtypep} procedures for the \code{cons} type
-specifier also have to be studied.
+specifier also needs to be studied.
 
 \section{Early results}
 
