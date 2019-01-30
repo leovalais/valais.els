@@ -962,23 +962,6 @@ the six types above, with the bounds (if some) of their original type preserved.
   \label{tab:numequiv}
 \end{table}
 
-% The input type specifier only contains ranges and logical type specifiers.
-% However, the type component of the ranges (their \code{car}) are not disjoint.
-% E.g.: in \code{(and (fixnum * *) (not (integer * (3))))},
-% \code{fixnum} is a subtype of \code{integer}---the intersection is then
-% non-empty, even though the symoblic types are different.
-
-% This is troublesome for the implementation of the interval union and
-% intersection algorithms. Indeed, as shown in the example above, the
-% intersection of two distinct types might be non-empty. However, if we had the
-% guarantee that the interval's type were mutually disjoint, the implementer of
-% the intersection could check for different types, and return $\emptyset$
-% (\code{nil}) if so.
-
-%  Hence every interval whose type is not one of these must be
-% converted into an equivalent interval (or union of disjoint intervals) which
-% type is one of these.
-
 \subsubsection{Canonicalization}
 \subsubsection{Range emptiness check}
 
