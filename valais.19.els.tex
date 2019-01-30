@@ -135,7 +135,7 @@ efforts on), {\small\code{(satisfies 'boolean 'keyword)}} returns
 \code{(nil nil)}, thus violating the standard\footnote{The Common Lisp standard
   requires that no invocation of \footcode{subtypep} involving only primitive types
   returns \footcode{(nil nil)}.}. The definition of the \code{keyword} type is
-responsible for this failure: as shown in \vref{lst:keyword}, it
+responsible for this failure: as shown in Listing \ref{lst:keyword}, it
 involves a \code{satisfies} type specifier\footnote{%
   C.f. bug \#1533685 in \sbcl{} bug tracker.
 }.
@@ -179,8 +179,8 @@ such as C++. Instead, the type to be
 manipulated is \emph{described} using a \emph{type specifier}.
 The type specifier Domain-Specific Language (DSL) allows programmers to
 describe types by writing S-expressions which obey some rules described in the
-Common Lisp standard \cite{bib:ansi.94.cl} and roughly summarized in
-\vref{tab:ts}\footnote{More type specifiers exist. We do not describe them here either
+Common Lisp standard \cite{bib:ansi.94.cl} and roughly summarized in table
+\ref{tab:ts}\footnote{More type specifiers exist. We do not describe them here either
   because we do not support them yet or because Baker's procedure ignores them
   as well.}.
 
@@ -188,13 +188,14 @@ A subtlety about type specifiers is that \emph{different ones} can
 represent the \textit{same} type (e.g., \code{integer}, \code{(integer * *)} and
 \code{(or fixnum bignum)} all describe the same type). It means that
 \emph{symbolic computation does not suffice} to answer the sub-typing question.
-As shown in \vref{lst:type=}, one could write a predicate, say \code{type=}, to
-determine whether two type specifiers describe in fact the same type using
-\code{subtypep}.
+As shown in Listing \ref{lst:type=}, one could write a predicate, say
+\code{type=}, to determine whether two type specifiers describe in fact the same
+type using \code{subtypep}.
 
 It is possible to define \emph{parametric aliases} using the \code{deftype}
 construct. It is then possible to refer to a whole type specifier using its
-alias. The \vref{lst:deftype} shows an example of parametric \code{deftype}.
+alias. The Listing \ref{lst:deftype} shows an example of parametric
+\code{deftype}.
 
 \begin{listing}
 \begin{clcode}
@@ -299,8 +300,8 @@ type specifier, hence restricting it to \emph{one} kingdom.
 
 \section{Procedure's mechanisms overview}
 \label{sec:flow}
-\vref{fig:flow} shows the internals of our implementation. Every step will be
-detailed in the following sections. There are three \emph{major stages}:
+Figure \ref{fig:flow} shows the internals of our implementation. Every step will
+be detailed in the following sections. There are three \emph{major stages}:
 
 \begin{enumerate}
 \item \emph{The pre-processing} --- Both type specifiers are processed in order to
@@ -311,14 +312,14 @@ detailed in the following sections. There are three \emph{major stages}:
   type representation differ. In order to achieve that, the type specifiers must
   also be split into equivalent subtype specifiers restricted to each concerned
   kingdom.
-  This stage is detailed in \vref{sec:pre}.
+  This stage is detailed in Section \ref{sec:pre}.
 \item \emph{Expert sub-procedures} --- Once split, each subtype specifier is
   redirected to the appropriate expert sub-procedure. The job of such a procedure is to
   \emph{prove}, in its own kingdom, the assertion ``$A$ is a subtype of $B$'' to
   be \emph{wrong}.
   Our procedures currently only supports literal and range type specifiers---an
   expert sub-procedure has been implemented only for these two kingdoms. This
-  stage is detailed in \vref{sec:exp}.
+  stage is detailed in Section \ref{sec:exp}.
 \item \emph{Result conjunction} --- Eventually, all expert sub-procedures
   return (a Boolean) and the results are accumulated using conjunction.
   (In practice, as soon as one expert procedure return false, \code{subtypep}
@@ -338,7 +339,8 @@ detailed in the following sections. There are three \emph{major stages}:
 The very first step is to ensure that the type specifier is in its
 \emph{canonical form}, that is, having all its aliases expanded. This is done by
 the \code{expand} function. For example, considering the type created in
-\vref{lst:deftype}, \code{(expand '(except 12))} should return \code{(not (eql 12))}.
+Listing \ref{lst:deftype}, \code{(expand '(except 12))} should return \code{(not
+  (eql 12))}.
 
 Unlike macro expansion, \code{deftype} expansion is not standardized in Common
 Lisp. Thus a solution must be found for each implementation
@@ -352,7 +354,7 @@ type simplification---turning \code{(and integer string)} into
 that function to make it compatible with Baker's algorithm while keeping the
 \code{deftype} expansion and the range canonicalization work. However we found,
 thanks to \cite{newton.18.phd} tools, that the function is responsible for most
-of the work of \code{subtypep}, as shown in \vref{fig:specifiertype}
+of the work of \code{subtypep}, as shown in Figure \ref{fig:specifiertype}
 \footnote{The \footcode{cached-subtypep-caching-call} is just a memoizing wrapper
   around \sbcl's \footcode{subtypep} which is a bit more efficient than the raw
   implementation}.
@@ -388,9 +390,9 @@ alias to expand again.
 
 \subsection{Numeric type specifiers conversion}
 \label{sec:numconv}
-As explained in \vref{sec:flow}, after pre-processing both type specifiers, the
-procedure splits in two expert sub-procedures: one for literal type specifiers
-and one for range type specifiers.
+As explained in Section \ref{sec:flow}, after pre-processing both type
+specifiers, the procedure splits in two expert sub-procedures: one for literal
+type specifiers and one for range type specifiers.
 Numeric types---types containing numbers (mathematically speaking)---can have
 different representations: a \emph{symbol} (e.g., \code{fixnum}), a \emph{range}
 (e.g., \code{(integer 1 6)}) or a \emph{\code{member} expression}
@@ -454,7 +456,7 @@ Thus the top type \code{t} is divided into two\footnote{
   One per kingdom actually, but since out implementation only support
   two---literal and range types---we only focus our attention these.
 } disjoint subtypes---``kingdoms'' as Baker says. The last step, described in
-\vref{sec:numconv}, ensures the representation (in term of type specifiers) of
+Section \ref{sec:numconv}, ensures the representation (in term of type specifiers) of
 the types in each kingdom is different. All numeric types are represented as
 ranges and literal types are represented as symbolic and \code{member} (without
 numbers) type specifiers.
@@ -481,7 +483,7 @@ Likewise, given the predicate \code{range-type-p}, this function returns $T$
 with every non-range inner type specifier replaced by \code{nil} (interpreted
 this time as the \textit{empty range}). Thus the result is a subtype of \code{number}.
 Therefore, \code{split} can easily be implemented in terms of
-\code{type-keep-if}, as shown in \vref{lst:split}.
+\code{type-keep-if}, as shown in Listing \ref{lst:split}.
 
 \begin{listing}
 \begin{clcode}
@@ -521,8 +523,8 @@ easier to reason about, and implement).
 
 \section{Expert sub-procedures}
 \label{sec:exp}
-\vref{lst:tdstp} shows how \code{subtypep} could be defined from a top-down
-point of view. It shows that, according to \vref{fig:flow}, both type
+Listing \ref{lst:tdstp} shows how \code{subtypep} could be defined from a top-down
+point of view. It shows that, according to Figure \ref{fig:flow}, both type
 specifiers are processed independently, split into two kingdoms (literal and
 numeric types) and unified in an \code{(and U (not V))} fashion. The
 expert sub-procedures, \code{null-literal-type-p} and \code{null-numeric-type-p},
@@ -560,10 +562,10 @@ means the empty type which complement is \code{t} whereas for numeric types it
 represent the empty range witch complement is \code{(number * *)}.
 
 In the following sections we describe in detail the implementation of the expert
-sub-procedures for the literal (\vref{sec:explit}) and numeric
-(\vref{sec:expnum}) type kingdoms. We also briefly discuss
+sub-procedures for the literal (Section \ref{sec:explit}) and numeric
+(Section \ref{sec:expnum}) type kingdoms. We also briefly discuss
 the array type kingdom and the \code{cons} type specifier family,
-which Baker ignores in his article, in \vref{sec:expoth}.
+which Baker ignores in his article, in Section \ref{sec:expoth}.
 
 \begin{listing}
 \begin{clcode}
@@ -590,7 +592,7 @@ top-level type \code{t}. We associate to each pair $\left(t_i, e_j\right)$ the
 bit $b_{ij}$ with the value $1$ when $e_j \in t_i$ and $0$ when $e_j \notin t_i$.
 Let $bv_i$ be the \emph{representative bit-vector} associated to the type $t_i$,
 defined by $\left[b_{i0}, b_{i1}, \dots, b_{i\omega}\right]$. These
-bit-vectors are the rows of the infinite matrix on \vref{eq:matrix} which
+bit-vectors are the rows of the infinite matrix on Eq. \ref{eq:matrix} which
 illustrates the system.
 
 \[
@@ -746,7 +748,7 @@ recognizable by \code{typep}.'' Thus, \code{subtypep} is not concerned by these
 types of structures.
 
 To address the misrepresentation problem when \code{member} type specifiers are
-involved, as discussed in \vref{sec:issues}, we must ensure that a new
+involved, as discussed in Section \ref{sec:issues}, we must ensure that a new
 representative element is generated and registered. The Common Lisp
 standard (\cite{bib:ansi.94.cl}) states that the \code{member} type specifier is
 defined in terms of \code{eql}. That is, \code{(typep $e$ '(member $e_1$
@@ -760,11 +762,11 @@ top-level type \code{t}: \code{t} = \code{(or string list symbol)}. Then, let
 $R$ = \code{("hello" (1 2 3) foo)} be our list of representatives.
 \begin{enumerate}
 \item Let's ask the question \code{(subtypep 'symbol '(member foo))}.
-\item As discussed in \vref{sec:issues}, we add the elements of the
+\item As discussed in Section \ref{sec:issues}, we add the elements of the
   \code{member} expression to $R$. To conform with the specification, we first
   check whether or not \code{foo} is already in $R$ \code{eql}-wise:
   $\mcode{foo} \in_{\mcode[\scriptsize]{eql}} R$, so $R$ does not change.
-\item As shown in \vref{eq:symbol}, the emptiness check passes, meaning that
+\item As shown in Eq. \ref{eq:symbol}, the emptiness check passes, meaning that
   \code{symbol} is indeed a subtype of \code{(member foo)}, which is obviously
   wrong.
   \begin{align}
@@ -781,7 +783,7 @@ comparison.
 \item \code{(subtypep 'list '(member (1 2 3)))}
 \item $\mcode{(1 2 3)} \not\in_{\mcode[\scriptsize]{eql}} R \Rightarrow R =
   \mcode{("hello" (1 2 3) foo (1 2 3))}$
-\item As shown in \vref{eq:list}, the emptiness check fails and the answer is
+\item As shown in Eq. \ref{eq:list}, the emptiness check fails and the answer is
   correct.
   \begin{align}
     B(\mcode{list}) \wedge \neg B(\mcode{(member (1 2 3))}) &= 0101 \wedge \neg 0001 \label{eq:list}\\
