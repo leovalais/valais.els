@@ -533,26 +533,31 @@ expert sub-procedures, \code{null-literal-type-p} and \code{null-numeric-type-p}
 each accept one argument---a type specifier, say $T$---and returns a Boolean
 indicating whether $T$ describes the empty type (\code{nil}).
 
-Each sub-procedure answers inside its kingdom. There are two kingdoms supported
-by our implementation:
+Each sub-procedure answers restricted to its kingdom---as no type can (at this
+point of the procedure) belong to two different kingdoms, as shown in
+section~\ref{sec:pre}. With that piece of information, we can (now) safely assert
+that:
 \begin{itemize}
-\item \emph{literal types} --- at most the type described by \code{(and (not
-    number) (not (array * *)))}\footnote{
+\item the literal type kingdom is the type described by \code{(and (not number)
+    (not (array * *)))}\footnote{%
     Actually this is not completely accurate since the type \footcode{string}
     can be described using array type specifiers. However, since the latter are
     not supported by our implementation yet, we consider the types
     \footcode{string} and \footcode{bit-vector} being literal types since their
     symbolic representation is kept through the entire process. This is very
     likely to change in the future.
-    }, only expressed as symbolic and \code{member} type
-  specifiers.
-\item \emph{numeric types} --- at most the type described by \code{number}, only
-  expressed using interval type specifiers.
+  }, and,
+\item the numeric type kingdom is the type described by \code{number}\footnote{%
+    Our implementation does not support complex numbers yet, and considers the
+    \footcode{complex} type being empty. Some wrong results arise from that
+    supposition---such as \footcode{(subtypep 'number 'real)} returning true.
+    This will change as soon as complex numbers are supported.
+  }.
 \end{itemize}
 
-There are several properties that are derived from the precedent pre-processing
+There are several properties that are derived from the preceding pre-processing
 steps. First of all, both kingdoms' procedures are guaranteed to receive as
-argument \emph{canonical} type specifiers only. These are also guaranteed not to
+argument \emph{canonical} type specifiers only. These are also guaranteed to never
 contain \code{atom} or \code{t} type specifiers. The occurrences of \code{(and)}
 and \code{(or)} have been replaced respectively by \code{t} and \code{nil}.
 \code{eql} type specifiers have been replaced by equivalent \code{member} expressions.
@@ -561,7 +566,7 @@ no numerical data. Numerical data are only expressed as intervals, which are lik
 not to be valid type specifiers. Both kingdoms accept the type specifier
 \code{nil} but with a \emph{different meaning}: for literal types, \code{nil}
 means the empty type which complement is \code{t} whereas for numeric types it
-represent the empty range witch complement is \code{(number * *)}.
+represent the empty range whose complement is \code{(number * *)}.
 
 In the following sections we describe in detail the implementation of the expert
 sub-procedures for the literal (Section \ref{sec:explit}) and numeric
