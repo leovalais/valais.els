@@ -20,7 +20,7 @@
 \newcommand\intvl[1]{\llbracket#1\rrbracket}
 
 \usemintedstyle{xcode}
-\newminted{cl}{autogobble,breaklines,escapeinside=||,fontsize=\small}
+\newminted{cl}{autogobble,breaklines,escapeinside=||,fontsize=\footnotesize}
 
 \newcommand\code[2][\small]{\sloppy\texttt{#1#2}}
 \newcommand\mcode[2][\small]{\text{\code[#1]{#2}}}
@@ -179,10 +179,10 @@ such as C++. Instead, the type to be
 manipulated is \emph{described} using a \emph{type specifier}.
 The type specifier Domain-Specific Language (DSL) allows programmers to
 describe types by writing S-expressions which obey some rules described in the
-Common Lisp standard \cite{bib:ansi.94.cl} and roughly summarized in table
-\ref{tab:ts}\footnote{More type specifiers exist. We do not describe them here either
-  because we do not support them yet or because Baker's procedure ignores them
-  as well.}.
+Common Lisp standard \cite{bib:ansi.94.cl} and roughly summarized in
+table~\ref{tab:ts}\footnote{More type specifiers exist. We do not describe them
+  here either because we do not support them yet or because Baker's procedure
+  ignores them as well.}.
 
 A subtlety about type specifiers is that \emph{different ones} can
 represent the \textit{same} type (e.g., \code{integer}, \code{(integer * *)} and
@@ -868,6 +868,42 @@ Baker claims that in practice, that theoretical complexity is not an issue (it
 only appears for ``highly artifical cases''). We have not tried to prove (or
 invalidate) his statement but Section \ref{sec:res} shows some early results
 that tend to prove him right.
+
+We use a custom abstraction, the \code{interval} class, closer to the
+mathematical object (with type, bounds and limits slots). Thus we avoid the
+annoying manipulation of lists (with the many standardized ranges syntaxes).
+The first step is to write a function \code{range->interval} that converts
+(using pattern matching) a range type specifier to its corresponding
+\code{interval} instance. This function also takes care of the exotic compound
+forms---such as \code{(unsigned-byte $s$)} which describes the \code{integer}
+range $\left[0; 2^s-1\right]$. We also use a similar structure for interval
+operations to fully discard the list representation. One could define the
+\code{interval} class as shown in the Listing \ref{lst:interval}.
+
+We also need the following \code{interval} functions:
+\begin{itemize}
+\item \code{(interval-and $I_1$ $I_2$)} --- returns $I_1 \cap I_2$ if their
+  \code{type}s are \emph{\code{eql}}, or $\emptyset$ otherwise.
+\item \code{(interval-or $I_1$ $I_2$)} --- returns $I_1 \cup I_2$ if their
+  \code{type}s are \emph{\code{eql}} and $I_1 \cap I_2 \not= \emptyset$, or $\emptyset$ otherwise.
+\item \code{(interval-minus $I_1$ $I_2$)} --- returns $I_1 - I_2$ (may return
+  two values when $I_2 \subset I_1$) if their \code{type}s are \emph{\code{eql}},
+  or $I_1$ otherwise.
+\item \code{(interval-empty-p $I$)} --- returns whether $I = \emptyset$.
+\end{itemize}
+
+\begin{listing}
+\begin{clcode}
+(defstruct interval
+  (type (error "must specify a type") :type symbol)
+  (low '* :type (or (eql *) real))
+  (high '* :type (or (eql *) real))
+  (lclose t :type boolean) ; whether or not low is included
+  (rclose t :type boolean))
+\end{clcode}
+\caption{A possible implementation of the \code{interval} class}
+\label{lst:interval}
+\end{listing}
 
 \subsubsection{Type diversity reduction}
 \subsubsection{Canonicalization}
