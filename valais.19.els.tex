@@ -906,6 +906,79 @@ We also need the following \code{interval} functions:
 \end{listing}
 
 \subsubsection{Type diversity reduction}
+Functions working with intervals must be aware of the relationship of the types
+of these intervals. For example, the intersection of two \code{integer}
+intervals might be non-empty whereas the intersection of one \code{integer} and
+one \code{single-float} intervals is always null as these two types are disjoint.
+However, \code{integer} and \code{fixnum} are different types but the
+intersection of intervals of such types \emph{might be non-empty}.
+The subtype relationship of the types of intervals needs to be introspected to
+accurately apply some operations (such as intersection or union).
+
+The type \code{number} (complex numbers being ignored) is an exhaustive
+partition of six mutually disjoint types: \code{integer}, \code{ratio},
+\code{single-float}, \code{short-float}, \code{double-float}, and
+\code{long-float}.
+Baker advises to define what he calls ``simple intervals'', that is intervals
+guaranteed their \code{type} equal to one of these six types. This way, as these
+types are guaranteed to be mutually disjoint, operations on intervals of such
+types have their implementation greatly simplified.
+
+To convert each numeric type into its equivalent using only the six types above,
+a two-step conversion is required.
+\begin{enumerate}
+\item For intervals which \code{type} is a \emph{supertype} of one of these
+  types, the conversion table~\ref{tab:numequiv} is used. E.g.: the conversion
+  of \code{(rational $a$ $b$)} gives \code{(or (integer $a$ $b$) (ratio $a$
+    $b$))}.
+\item For intervals which \code{type} is a \emph{bounded subtype} (i.e.: having
+  defined bounds, not infinity) of these six types, their actual bounds have to
+  be constrained to fit within the bounds of their type, before being converted
+  to their corresponding supertype. For example, \code{(fixnum $12$ $2^{100}$)},
+  has to be converted to \code{(integer most-negative-fixnum
+    most-positive-fixnum)}, where $\mcode{most-positive-fixnum} < 2^{100}$, as
+  $2^{100}$ is a \code{bignum}, thus discarding the numbers in between.
+  A similar procedure is applied to the types \code{bit}, \code{short-float},
+  \code{single-float}, \code{double-float} and \code{long-float}.
+\end{enumerate}
+
+Eventually, the \code{type} of every \code{interval} is constrained to one of
+the six types above, with the bounds (if some) of their original type preserved.
+
+\begin{table}
+  \centering
+  \begin{tabular}{|c|c|}
+    \hline
+    \emph{Supertype} & \emph{Conversion} \\
+    \hline
+    \code{number} & \code{(or rational float)} \\
+    \code{real} & \code{(or rational float)} \\
+    \code{rational} & \code{(or integer ratio)} \\
+    \code{float} & \code[\scriptsize]{(or short-float single-float double-float long-float)} \\
+    \code{bignum} & \code{(or integer (not fixnum))} \\
+    \hline
+  \end{tabular}
+  \caption{Conversion table for supertypes}
+  \label{tab:numequiv}
+\end{table}
+
+% The input type specifier only contains ranges and logical type specifiers.
+% However, the type component of the ranges (their \code{car}) are not disjoint.
+% E.g.: in \code{(and (fixnum * *) (not (integer * (3))))},
+% \code{fixnum} is a subtype of \code{integer}---the intersection is then
+% non-empty, even though the symoblic types are different.
+
+% This is troublesome for the implementation of the interval union and
+% intersection algorithms. Indeed, as shown in the example above, the
+% intersection of two distinct types might be non-empty. However, if we had the
+% guarantee that the interval's type were mutually disjoint, the implementer of
+% the intersection could check for different types, and return $\emptyset$
+% (\code{nil}) if so.
+
+%  Hence every interval whose type is not one of these must be
+% converted into an equivalent interval (or union of disjoint intervals) which
+% type is one of these.
+
 \subsubsection{Canonicalization}
 \subsubsection{Range emptiness check}
 
