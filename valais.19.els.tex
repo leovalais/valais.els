@@ -343,7 +343,7 @@ Listing \ref{lst:deftype}, \code{(expand '(except 12))} should return \code{(not
   (eql 12))}.
 
 Unlike macro expansion, \code{deftype} expansion is not standardized in Common
-Lisp. Thus a solution must be found for each implementation
+Lisp. Thus a solution must be found for each Common Lisp implementation
 independently. As our efforts are currently focused on \sbcl{}, we discuss
 how we implement the \code{expand} function for that compiler.
 
@@ -363,11 +363,11 @@ not be trivial to simplify it to only keep the interesting bits, we decided to
 stick to another, more cost-effective solution.
 
 The function \code{sb-ext:typexpand} takes a type specifier and tries to expand
-it (not recursively) and either returns the expansion result or the input type
+it (not recursively). It either returns the expansion result, or the input type
 specifier if it is not expandable. \code{(sb-ext:typexpand 'integer)} returns
 \code{integer} since it is not a \code{deftype} alias whereas
 \code{(sb-ext:typexpand '(except 12))} returns \code{(not (eql 12))}.
-To expand a whole type specifier, it just needs to go through it, applying
+To expand a whole type specifier, it just needs to walk through it, applying
 \code{sb-ext:typexpand} on each list or atom manually. One subtlety though is
 that the result of an expansion may itself be an alias to
 expand\footnote{%
@@ -396,21 +396,19 @@ type specifiers and one for range type specifiers.
 Numeric types---types containing numbers (mathematically speaking)---can have
 different representations: a \emph{symbol} (e.g., \code{fixnum}), a \emph{range}
 (e.g., \code{(integer 1 6)}) or a \emph{\code{member} expression}
-(e.g., \code{(member 1 2 3)}). However, the first two are literal where le
+(e.g., \code{(member 1 2 3)}). However, the first two are literal where the
 latter is a range. Thus, the numerical type information would be distributed in
-the different expert sub-procedures (which does not share any data). For
-consistency's sake and to obtain accurate results, a single internal
+the different expert sub-procedures. For consistency and accuracy, a single internal
 representation has to be chosen. The symbolic and \code{member} numeric types
-must then be converted into an equivalent type specifier involving only ranges
-to describe numerical data.
+must each be converted into an equivalent type specifier, in which numerical
+data are only represented using ranges.
 
 \begin{itemize}
 \item \emph{Symbolic} numeric type specifier --- say \code{U}, replace it by
   \code{(U * *)}\footnote{%
     Implementations supporting the IEEE floating point
     raise many concerns with \footcode{-0.0}, $NaN$, $+\infty$ and $-\infty$.
-    Baker explains in detail how to handle these cases, which our implementation
-    does not support yet. (\sbcl{} does not implement that specification.)%
+    Baker explains in detail how to handle these cases.%
   }. Note the new ``type specifier'' is likely
   \emph{not} to be valid (e.g., \code{(fixnum * *)} is invalid). Because it is
   never exposed to the user---as it is an intermediate, internal
@@ -422,8 +420,11 @@ to describe numerical data.
   \begin{enumerate}
   \item extract the numbers out of the expression,
   \item map each number, say $n$, to construct the type specifier
-    \code{((type-of $n$) $n$ $n$)}\footnote{\footcode{type-of} sometimes
-      returns a list which \footcode{car} is the type of the range.},
+    \code{((type-of $n$) $n$ $n$)}\footnote{%
+      The results of \footcode{type-of} are implementation-dependent. We suppose
+      here that \footcode{type-of} only returns the name (as a symbol) of the
+      type of $n$ ($n$ being a \footcode{number}).
+    },
   \item and combine the remaining \code{member} expression and the ranges with
     the \code{or} logical type specifier.
   \end{enumerate}
@@ -443,43 +444,44 @@ converted similarily.
 Yet another subtlety is that the type specifiers \code{(and)} and
 \code{(or)} respectively describe the types \code{t} and \code{nil}. Hence
 every occurrence of \code{(and)} must be replaced by the replacement of
-\code{t} described in the last paragraph. In order to remove that annoying
+\code{t} described in the previous paragraph. In order to remove that annoying
 corner case completely, \code{(or)} is also replaced, by \code{nil}.
 
 \subsection{Splitting}
-Reached this step, the input now only contains \emph{canonical} \emph{literal} and
-\emph{range} type specifiers, numeric types being \emph{only} expressed as
-ranges. The next stage---expert sub-procedures---requires literal and numeric
-types to be separated.
+Having reached this step, the input now only contains \emph{canonical}
+\emph{literal} and \emph{range} type specifiers, numeric types being \emph{only}
+expressed as ranges. The next stage---expert sub-procedures---requires literal
+and numeric types to be separated.
 
 Thus the top type \code{t} is divided into two\footnote{
   One per kingdom actually, but since out implementation only support
   two---literal and range types---we only focus our attention these.
-} disjoint subtypes---``kingdoms'' as Baker says. The last step, described in
-Section \ref{sec:numconv}, ensures the representation (in term of type specifiers) of
-the types in each kingdom is different. All numeric types are represented as
-ranges and literal types are represented as symbolic and \code{member} (without
+} disjoint subtypes---``kingdoms'' as Baker says. The previous step, described in
+Section \ref{sec:numconv}, ensures that the representation (in terms of type
+specifiers) of the types in each kingdom is different. All numeric types are
+represented as ranges, and literal types as symbolic and \code{member} (without
 numbers) type specifiers.
 
-This step roughly consists in an in-depth traversal of the type specifier, using
+This step roughly consists of an in-depth traversal of the type specifier, using
 pattern-matching to recognize which type specifier represents which type. We use
-the implementation of \cite{bib:norvig.92.paip} for its simplicity and versatility.
+the implementation of \cite{bib:norvig.92.paip} because of its simplicity and
+versatility.
 
 Our implementation uses a function \code{type-keep-if} which takes a predicate
-$P$ and a type specifier $T$ and returns:
+$P$ and a type specifier $U$ and returns:
 \begin{itemize}
-\item $T$ as it is when $P(T) = \top$,
-\item \code{nil} when $P(T) = \bot$,
+\item $U$ as it is when $P(U) = \top$,
+\item \code{nil} when $P(U) = \bot$,
 \item \code{($op$ $U_1$ $\cdots$ $U_n$)}
-  where \(U_i = \mcode{(type-keep-if $P$ $T_i$)}\)
-  when \(T = \mcode{($op$ $T_1$ $\cdots$ $T_n$)}\)
+  where \(U_i = \mcode{(type-keep-if $P$ $U_i$)}\)
+  when \(U = \mcode{($op$ $U_1$ $\cdots$ $U_n$)}\)
   and $op \in \{\mcode{and}, \mcode{or}, \mcode{not}\}$.
 \end{itemize}
-This function, given the predicate \code{literal-type-p} and a type $T$, returns
-$T$ with every inner type specifier that describes a non-literal type
+Given the predicate \code{literal-type-p} and a type $U$, \code{type-keep-if}
+returns $U$ with every inner type specifier that describes a non-literal type
 replaced by \code{nil} (interpreted as the \textit{empty type}). The result is then a
 subtype of \code{(and t (not number))}.
-Likewise, given the predicate \code{range-type-p}, this function returns $T$
+Likewise, given the predicate \code{range-type-p}, this function returns $U$
 with every non-range inner type specifier replaced by \code{nil} (interpreted
 this time as the \textit{empty range}). Thus the result is a subtype of \code{number}.
 Therefore, \code{split} can easily be implemented in terms of
@@ -507,8 +509,8 @@ SLIME> (split  '(and (or symbol (float * *) (ratio * *))
 \label{lst:split}
 \end{listing}
 
-\subsection{Type unification}
-According to theory, for any types $T$ and $U$,
+\subsection{Type reformulation}
+For any types $T$ and $U$,
 \(T \subseteq U \Leftrightarrow T \cap \overline{U} = \emptyset\).
 Therefore, for any type specifiers \code{U} and \code{V}, when
 \code{(subtypep U V)} returns \code{T T}, then
