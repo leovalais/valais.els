@@ -845,6 +845,34 @@ the class prototype of $C$ yet.
 
 \subsection{Procedure for numeric types}
 \label{sec:expnum}
+Unlike the literal type kingdom, the range type kingdom does not need an
+internal state to represent numeric types. Indeed, the expert sub-procedure
+takes as input an already precise enough representation of the type described.
+Range type specifiers allow to describe which kind of number is specified (its
+type, e.g., \code{integer}, \code{ratio}, etc.), its bounds (inclusive and
+exclusive, e.g., \code{(integer (0) 6)}) and is able to represent non-bounded
+intervals through the symbol \code{*} meaning infinity (e.g., \code{(float *
+  0.0)} $\equiv \left[-\infty; 0.0\right]$). The range type specifier is
+\emph{as precise as the mathematical range notation}. Additionally, the
+mathematical union, the intersection and the complement of these ranges can
+be expressed equally using the corresponding logical type specifier.
+
+Therefore, to assert about the emptiness of the input type specifier, checking
+whether the \emph{canonicalized} version of this interval expression describes
+the empty range (i.e., \code{nil}) is \emph{sufficient}.
+The calculation is performed by three successive steps, which we describe in the
+following sections.
+
+This algorithm suffers from an exponential time and space complexity. However,
+Baker claims that in practice, that theoretical complexity is not an issue (it
+only appears for ``highly artifical cases''). We have not tried to prove (or
+invalidate) his statement but Section \ref{sec:res} shows some early results
+that tend to prove him right.
+
+\subsubsection{Type diversity reduction}
+\subsubsection{Canonicalization}
+\subsubsection{Range emptiness check}
+
 
 \subsection{Array types and \code[\large]{cons} type specifiers}
 \label{sec:expoth}
@@ -878,6 +906,7 @@ The accuracy of existing \code{subtypep} procedures for the \code{cons} type
 specifier also needs to be studied.
 
 \section{Early results}
+\label{sec:res}
 
 \section{Conclusion and Future Work}
 [...]
