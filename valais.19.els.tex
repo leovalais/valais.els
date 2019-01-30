@@ -617,7 +617,7 @@ illustrates the system.
   \emph{\small Each type has a unique bit-vector representation.}
   \newcommand{\reldiff}[2]{#1 \cup #2 \backslash #1 \cap #2}
 
-  Let $t_i$ and $t_j$ two distinct types. Thus, $\reldiff{t_i}{t_j} \neq \emptyset$.
+  Let $t_i$ and $t_j$ be two distinct types. Thus, $\reldiff{t_i}{t_j} \neq \emptyset$.
   Let $e_k \in \reldiff{t_i}{t_j}$. By definition, we have $b_{ik} \neq b_{jk}$.
   Hence $bv_i \neq bv_j$. Two distinct types are represented by two different
   bit-vectors.
@@ -653,36 +653,47 @@ illustrates the system.
   \end{enumerate}
 \end{proof}
 
-On each \code{null-literal-type-p} call, we lookup each symbolic type
-specifiers' (e.g., \code{symbol}) and \code{member} expressions' (roughly
-anonymous types) bit-vectors in the matrix, combine these
-on each logical type specifier using the appropriate Boolean operation. Finally,
-we compare the bit-vector against the bit-vector of \code{nil}, that is
-$\left[0, 0, \dots, 0\right]$, and return the result.
+% Consequently, we have:
+% \begin{itemize}
+% \item with $u_{n+1} = $ \code{(and $u_1$ $\cdots$ $u_n$)},
+%   \(bv_{n+1} = \bigwedge_{i=1}^n bv_i\) ;
+% \item with $u_{n+1} = $ \code{(or $u_1$ $\cdots$ $u_n$)},
+%   \(bv_{n+1} = \bigvee_{i=1}^n bv_i\) ;
+% \item with $u_{n+1} = $ \code{(not $u_n$)},
+%   \(bv_{n+1} = \neg bv_n\).
+% \end{itemize}
+
+% On each \code{null-literal-type-p} call, we look up each symbolic type
+% specifiers' (e.g., \code{symbol}) and \code{member} expressions' (roughly
+% anonymous types) bit-vectors in the matrix, combine these
+% on each logical type specifier using the appropriate Boolean operation. Finally,
+% we compare the bit-vector against the bit-vector of \code{nil}, that is
+% $\left[0, 0, \dots, 0\right]$, and return the result.
 
 \subsubsection{Implementation}
 Common Lisp cannot enumerate all the possible subtypes of \code{t} nor all of
-its elements. Fortunately we do not need them all. We only need to consider the
+its elements. Fortunately, we do not need them all. We only need to consider the
 types present in the input type specifier to determine its emptiness.
 
-It also means that we do \emph{not need to enumerate all the elements of these
-  types}. It is that aspect of the procedure of Baker that makes it both
-powerful and quite complex to understand at first. We only need \emph{enough}
-elements from a type to distinguish it from the other types. Because we are
-now considering only a \emph{finite} number of types, say $t_1, \dots, t_n$, to
-register a new type $t_{n+1}$ to our (now \emph{finite}) matrix, we only need to
-find an element $e \in t_{n+1}$ such as $e \notin t_1 \cup \dots \cup t_n$.
+We also do \emph{not need to enumerate all the elements of these types}.
+It is that aspect of the procedure of Baker that makes it both powerful and
+difficult to understand at first. We only need \emph{sufficiently many} elements
+from a type to distinguish it from the other types.
+Because we are now considering only a \emph{finite} number of types, say $t_1,
+\dots, t_n$, to register a new type $t_{n+1}$ to our (now \emph{finite}) matrix,
+we only need to find an element $e \in t_{n+1}$ such as $e \notin t_1 \cup \dots
+\cup t_n$.
 
-Now let's suppose that $t_{n+1}$'s type specifier is in fact \code{(member
+Now let's suppose that the type specifier of $t_{n+1}$ is in fact \code{(member
   $e$)}, that $e$ is itself chosen as a representative element for another type,
 say $t_k$, and that $t_k$ is only distinguished from the other registered types
 by that element $e$. $t_{n+1}$ and $t_k$ would then have the same bit-vector
 representation when these types are likely to be distinct. The general solution
-for that kind of problem with \code{member} type specifiers is to register
-\emph{all} the elements. When there is a conflicting element $e$ already
+for that kind of problem is to register \emph{all} the elements found inside the
+\code{member} type specifier. When there is a conflicting element $e$ already
 registered as a representative for another types, we generate additional
 representatives for these types. That precaution ensures that this kind of
-conflict never happens and simplifies greatly the implementation of \code{member}
+conflict never happens and greatly simplifies the implementation of \code{member}
 type specifiers.
 
 To implement that registration matrix system, we use two functions:
@@ -713,12 +724,15 @@ The method for choosing the representative elements for a type depends of its
 nature: it can be a primitive type, a user-defined type (class, structure or
 condition) or a \code{member} expression.
 
-Since primitive types are known, their representative elements are chosen at
-compile-time. The $t_{n+1}$ subtlety above should still be kept in mind. For
+Since primitive types are known (c.f. table 4.2 of
+\cite{bib:ansi.94.cl.type-specifiers}), their representative elements are chosen
+at compile-time.
+The $t_{n+1}$ subtlety above should still be kept in mind. For
 instance, the type \code{null} is a subtype of both \code{symbol} and
-\code{list} so three representative elements are needed: \code{nil}, a non-empty
+\code{list} ; so three representative elements are needed: \code{nil}, a non-empty
 list and a symbol other than \code{nil}. Note that some primitive types are an
-\emph{exhaustive partition} of other types (e.g., \code{character}).
+\emph{exhaustive partition} of other types (e.g., \code{character} $\equiv$
+\code{(or base-char extended-char)}).
 Obviously, in that case, such a precaution does not apply.
 
 For user-defined types, Baker suggests to extend the type creation
@@ -726,12 +740,14 @@ mechanism---thus modifying the implementation's internal functions---to
 register a dummy element as a representative. We decided \emph{not} to follow
 his approach because of the poor portability of his solution. Indeed, this
 work, often non-trivial, would have to be repeated for each targeted Common Lisp
-implementation. Moreover, it would register a representative for \emph{every}
+implementation. (We would like to avoid modifying the \sbcl{} internal
+mechanisms.)
+Moreover, it would register a representative for \emph{every}
 class created, thus increasing bit-vectors' size uselessly since only a few of
 these classes are likely to appear in a \code{subtypep} type specifier.
 But more importantly, the main drawback of his solution is that creating that
 dummy element might have unexpected side-effects, as it may need to use slot's
-default values or/and \code{initialize-instance}.
+default values and/or \code{initialize-instance}.
 We decided instead to use the \emph{Meta Object Protocol} (\textsc{Mop})
 \cite{bib:kiczales.91.book}, more specifically \emph{class prototypes}. Class
 prototypes are pseudo-instances of a class, created without executing
@@ -745,14 +761,18 @@ when a new class is encountered, we force its finalization using the function
 }.
 Then, we create the prototype of the class using \code{sb-mop:class-prototype}
 and register it. This method is much more portable than Baker's and does not
-require to hook inside the implementation. Since (in \sbcl) conditions are
-classes, they are supported automatically. The Common Lisp standard
-\cite{bib:ansi.94.cl} states that ``\code{defstruct} without a \code{:type}
-option defines a class with the structure name as its name'', hence in that case
-no additional work is required. The standard also states that ``Specifying this
-option [...] prevents the structure name from becoming a valid type specifier
-recognizable by \code{typep}.'' Thus, \code{subtypep} is not concerned by these
-types of structures.
+require to hook inside the implementation.
+
+Since (in \sbcl\footnote{Every major lisp implementations implement conditions
+  as \textsc{Clos} classes---the most obvious way to do it. We ignore exotic
+  condition implementations.}) conditions are classes, they are supported
+automatically.
+The Common Lisp standard \cite{bib:ansi.94.cl} states that ``\code{defstruct}
+without a \code{:type} option defines a class with the structure name as its
+name'', hence in that case no additional work is required. The standard also
+states that ``Specifying this option [...] prevents the structure name from
+becoming a valid type specifier recognizable by \code{typep}.'' Thus,
+\code{subtypep} is not concerned by these types of structures.
 
 To address the misrepresentation problem when \code{member} type specifiers are
 involved, as discussed in Section \ref{sec:issues}, we must ensure that a new
@@ -814,7 +834,9 @@ To generate a new character, we first need to know whether it is a
 \code{base-char} or an \code{extended-char}. Then we pick a character of that
 type not registered yet. When all the characters of that type are registered
 there is nothing to do (since the type is fully represented in the matrix, no
-misinterpretation can occur). We have not addressed the problem of a type
+misinterpretation can occur).
+
+We have not addressed the problem of a type
 specifier involving a user class $C$ and a \code{member} expression containing
 the class prototype of $C$ yet.
 
