@@ -268,22 +268,38 @@ alias. The \vref{lst:deftype} shows an example of parametric \code{deftype}.
     as a class.
   \item[symbolic form] A type specifier whose type is \code{symbol}.
   \item[compound form] A type specifier whose type is \code{list}.
-  \item[logical form] A type specifier whose car is \code{or}, \code{and} or \code{not}.
-  \item[literal type] A type specifier that only contains symbolic types,
-    \code{member} types, and logical forms.
+  \item[logical form] A compound form whose car is \code{or}, \code{and} or \code{not}.
+  \item[kingdom] In Baker's terminology, a ``type kingdom'' designates the types
+    that can be described using \emph{only one kind of type specifier}.
+    \code{nil} (the empty type) belongs to every type kingdom.
   \item[interval] A mathematical interval that may not be a valid type specifier.
-  \item[range type] A type specifier that only contains ranges and logical forms.
-
   \item[type $\approx$ t.s.] When unambiguous, we write type specifiers where a
     mathematical type is expected and to use a type variable, say $U$, as a
     placeholder inside Lisp code for \emph{a type specifier describing} $U$.
-  \item[$U \subseteq U'$] The type $U$ is a non-strict subtype of $U'$.
-    We always have \code{(subtypep $U$ $U'$)}.
+  % \item[$U \subseteq U'$] The type $U$ is a non-strict subtype of $U'$.
+  %   We always have \code{(subtypep $U$ $U'$)}.
 \end{description}
+
+In this article we focus on two particular type kingdoms:
+\begin{itemize}
+\item the \emph{literal type kingdom}, represented using only
+  symbolic, \code{member} and logical type specifiers, and,
+\item the \emph{range type kingdom}, represented only using
+  range and logical type specifiers
+\end{itemize}
+
+There are other type kingdoms that Baker mention in his article, such as the
+\emph{array} type kingdom, represented using only \code{array} and logical type
+specifiers. Note that a type can belong to several kingdoms, as multiple type
+specifiers can describe it. For example, \code{integer} belongs to literal
+\emph{and} range kingdoms as the type specifiers \code{integer} (symbolic) and
+\code{(integer * *)} (range) both describe it. In Section \ref{sec:pre}, we
+describe how to guarantee that a given type is only described by one kind of
+type specifier, hence restricting it to \emph{one} kingdom.
 
 \section{Procedure's mechanisms overview}
 \label{sec:flow}
-\vref{fig:flow} pictures the internals of our implementation. Every step will be
+\vref{fig:flow} shows the internals of our implementation. Every step will be
 detailed in the following sections. There are three \emph{major stages}:
 
 \begin{enumerate}
@@ -293,18 +309,20 @@ detailed in the following sections. There are three \emph{major stages}:
   Finally, as explained thereafter, the procedure splits into several
   sub-procedures, one for each type kingdom, because their internal
   type representation differ. In order to achieve that, the type specifiers must
-  also be split into equivalent subtype specifiers restricted to each kingdom
-  concerned.
+  also be split into equivalent subtype specifiers restricted to each concerned
+  kingdom.
   This stage is detailed in \vref{sec:pre}.
 \item \emph{Expert sub-procedures} --- Once split, each subtype specifier is
-  redirected to the appropriate expert sub-procedure. Such procedures' job is to
-  determine, in its own \emph{kingdom} in Baker's terminology, whether or not it
-  can \emph{prove} the assertion ``$A$ is a subtype of $B$'' to be \emph{wrong}.
+  redirected to the appropriate expert sub-procedure. The job of such a procedure is to
+  \emph{prove}, in its own kingdom, the assertion ``$A$ is a subtype of $B$'' to
+  be \emph{wrong}.
   Our procedures currently only supports literal and range type specifiers---an
   expert sub-procedure has been implemented only for these two kingdoms. This
   stage is detailed in \vref{sec:exp}.
-\item \emph{Result accumulation} --- Eventually, all expert sub-procedures
+\item \emph{Result conjunction} --- Eventually, all expert sub-procedures
   return (a Boolean) and the results are accumulated using conjunction.
+  (In practice, as soon as one expert procedure return false, \code{subtypep}
+  returns.)
 \end{enumerate}
 
 \begin{figure}
