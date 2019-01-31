@@ -702,6 +702,14 @@ $B(\mcode{(member $e_1$ $\cdots$ $e_n$)}) = \bigvee_{i=1}^n
 \beta\left(I\left(e_i\right)\right)$,
 where $\beta(x)$ returns the null bit-vector with the $x$-th bit activated.
 
+The bit-vector of logical type specifiers are given in Eq.~\ref{eq:bvand},
+Eq.~\ref{eq:bvor} and Eq.~\ref{eq:bvnot} thereafter.
+\begin{align}
+  B\left(\mcode{(and $U_1$ $\cdots$ $U_n$)}\right) &= \bigwedge_{i=1}^n B(U_i) \label{eq:bvand}\\
+  B\left(\mcode{(or $U_1$ $\cdots$ $U_n$)}\right) &= \bigvee_{i=1}^n B(U_i) \label{eq:bvor}\\
+  B\left(\mcode{(not $U$)}\right) &= \neg B(U) \label{eq:bvnot}
+\end{align}
+
 \subsubsection{Issues}
 \label{sec:issues}
 The method for choosing the representative elements for a type depends of its
