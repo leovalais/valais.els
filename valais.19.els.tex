@@ -16,6 +16,7 @@
 \usepackage{enumitem} % description env
 \usepackage{tikz}
 \usepackage{pgfplots}
+\usepackage[normalem]{ulem}
 
 \newcommand\asterism{\medskip\noindent\textcolor{black!65}{\small\centerline{$\phantom{x}_{*\,\,\,*}^{\,\,\,*}$}}\smallskip}
 \newcommand\intvl[1]{\llbracket#1\rrbracket}
@@ -1046,15 +1047,14 @@ specifier also needs to be studied.
 
 \section{Early results}
 \label{sec:res}
-\newcommand\jimscale{0.6}
-\newcommand\jimgraph[1]{\scalebox{\jimscale}{\input{assets/19/#1}}}
+\newcommand\jimscale{0.5}
+\newcommand\jimgraph[1]{\scalebox{\jimscale}{\input{assets/19/#1.ltxdat}}}
 
 \begin{figure}
   \centering
-  \renewcommand\jimscale{0.5}
   \begin{tabular}{cc}
-    \jimgraph{big-member-smooth.ltxdat} % integer ranges
-    &\jimgraph{big-member-smooth.ltxdat} % subtypes of number
+    \jimgraph{baker-integer-ranges-smooth} % integer ranges
+    &\jimgraph{baker-subtypes-of-number-smooth} % subtypes of number
   \end{tabular}
   \caption{Performance in the range type kingdom}
   \label{fig:bad}
@@ -1062,27 +1062,53 @@ specifier also needs to be studied.
 
 \begin{figure}
   \centering
-  \jimgraph{big-member-smooth.ltxdat}
+  \renewcommand\jimscale{0.5}
+  \jimgraph{jim-member-bench}
   \caption{Performance for \code{member} type specifiers}
   \label{fig:perfmember}
 \end{figure}
 
 \begin{figure}
   \centering
-  \renewcommand\jimscale{0.5}
   \begin{tabular}{cc}
-    \jimgraph{big-member-smooth.ltxdat} % subtypes of t
-    &\jimgraph{big-member-smooth.ltxdat} % subtypes of condition
+    \jimgraph{baker-subtypes-of-t-smooth} % subtypes of t
+    &\jimgraph{baker-subtypes-of-condition-smooth} % subtypes of condition
   \end{tabular}
   \caption{Performance for symbolic type specifiers}
   \label{fig:good}
 \end{figure}
+
+\begin{table}
+  \centering
+  \newcommand{\sample}[1]{%
+    \renewcommand{\ULthickness}{2.4pt}%
+    \textcolor{#1}{\sout{\qquad}}%
+    \renewcommand{\ULthickness}{.4pt}% Resetting to ulem default
+  }
+  \definecolor{a1cl}{RGB}{143,176,255}
+  \definecolor{a1bak}{RGB}{255,47,128}
+  \definecolor{a2cl}{RGB}{0,111,166}
+  \definecolor{a2bak}{RGB}{79,198,1}
+  \begin{tabular}{|cl|}
+    \hline
+    \sample{a1cl} & Algo 1 with \code{cl:subtypep}\\
+    \sample{a1bak} & Algo 1 with \code{baker:subtypep}\\
+    \sample{a2cl} & Algo 2 with \code{cl:subtypep}\\
+    \sample{a2bak} & Algo 2 with \code{baker:subtypep}\\
+    \hline
+  \end{tabular}
+  \caption{Legend of figures \ref{fig:bad}, \ref{fig:perfmember} and \ref{fig:good}}
+  \label{tab:legend}
+\end{table}
+\begin{tabular}{|cl|}
+\end{tabular}
 
 Our implementation of \code{subtypep} is still in active development and very
 experimental. No serious optimization work has been made. Nonetheless, Newton
 has compared in \cite{newton.18.phd} the performances of several \code{subtypep}
 highly dependent algorithms, both using the implementation of \sbcl{} and ours.
 These results are only presented here as complementary information.
+Table~\ref{tab:legend} shows the legend of the figures in this section.
 
 As expected, our implementation is often slower, but not dramatically, which is
 encouraging. Figure \ref{fig:bad} shows that our implementation is overall
