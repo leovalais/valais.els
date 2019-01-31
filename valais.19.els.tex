@@ -972,7 +972,7 @@ complement). $\Gamma$ either returns $\emptyset$, an \code{interval} or a
 \emph{union of disjoint intervals}---the three possible outcomes of a
 mathematical interval canonicalization.
 
-First, anytime $\Gamma$ encounters or return a union, it must ensure that it is
+First, anytime $\Gamma$ encounters or returns a union, it must ensure that it is
 \emph{flattened} (no nested unions). It must also ensure that the intervals
 inside the union are \emph{disjoint}. As shown in Section \ref{sec:tdred},
 intervals with different types are necessarily disjoint. \emph{Touching
@@ -1003,9 +1003,10 @@ To break it down in a bottom-up fashion:
   either to Eq. \ref{eq:anddist2} or directly to Eq. \ref{eq:andfin}.
 \item Eq. \ref{eq:andapply} --- the canonicalization of the $\chi_n$ forms using
   mapping. The results are then folded using $\Gamma \circ \cap$, thus
-  initiating the recursive intersection distribution. Note that a possible
-  optimization is to stop the folding as soon as $\emptyset$ is to be used as an
-  intersection operand.
+  initiating the recursive intersection distribution.
+  % Note that a possible
+  % optimization is to stop the folding as soon as $\emptyset$ is to be used as an
+  % intersection operand.
 \end{enumerate}
 
 \begin{align}
