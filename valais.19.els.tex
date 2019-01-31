@@ -855,7 +855,7 @@ exclusive, e.g., \code{(integer (0) 6)}) and is able to represent non-bounded
 intervals through the symbol \code{*} meaning infinity (e.g., \code{(float *
   0.0)} $\equiv \left[-\infty; 0.0\right]$). The range type specifier is
 \emph{as precise as the mathematical range notation}. Additionally, the
-mathematical union, the intersection and the complement of these ranges can
+mathematical union, the intersection and complement of these ranges can
 be expressed equally using the corresponding logical type specifier.
 
 Therefore, to assert about the emptiness of the input type specifier, checking
@@ -922,9 +922,9 @@ partition of six mutually disjoint types: \code{integer}, \code{ratio},
 \code{single-float}, \code{short-float}, \code{double-float}, and
 \code{long-float}.
 Baker advises to define what he calls ``simple intervals'', that is intervals
-guaranteed their \code{type} equal to one of these six types. This way, as these
-types are guaranteed to be mutually disjoint, operations on intervals of such
-types have their implementation greatly simplified.
+guaranteed to have their \code{type} equal to one of these six types. This way,
+as these types are mutually disjoint, operations on intervals of such types have
+their implementation greatly simplified.
 
 To convert each numeric type into its equivalent using only the six types above,
 a two-step conversion is required.
@@ -1118,7 +1118,7 @@ slower in the range type kingdom.
 Figure \ref{fig:perfmember} shows that heavy users of \code{member} seems to
 experience a slower execution. Perhaps, as predicted by Baker, the reason is
 that the systematic registration of the elements makes the size of the
-bit-vector grow quickly, thus making every subsequent operation slower.
+bit-vectors grow quickly, thus making every subsequent operation slower.
 
 For the symbolic type specifiers---primitive types, \textsc{Clos} classes and
 conditions---our implementation already outperforms \sbcl's, as shown in
