@@ -990,7 +990,7 @@ Intersections (\code{and} logical type specifiers) are reduced as soon as they
 are encountered. Their operands needs to be processed by $\Gamma$ first (hence
 the implicit mapping ``$k \rightarrow n$''). Eq. \ref{eq:andapply} shows how to
 reduce intersections. The $\varPhi_f$ operator denotes a \emph{fold}
-\cite{Hutton1999fold} operation using the function $f$. $\Gamma \circ\, \cap$
+\cite{Hutton1999fold} operation using the function $f$. $\Gamma \circ \cap$
 denotes the composition of the $\Gamma$ function and the intersection operator.
 To break it down in a bottom-up fashion:
 \begin{enumerate}
@@ -1001,14 +1001,14 @@ To break it down in a bottom-up fashion:
   union. However, $\Gamma(\chi)$ may return an union, leading the execution
   either to Eq. \ref{eq:anddist2} or directly to Eq. \ref{eq:andfin}.
 \item Eq. \ref{eq:andapply} --- the canonicalization of the $\chi_n$ forms using
-  mapping. The results are then folded using $\Gamma \circ\, \cap$, thus
+  mapping. The results are then folded using $\Gamma \circ \cap$, thus
   initiating the recursive intersection distribution. Note that a possible
   optimization is to stop the folding as soon as $\emptyset$ is to be used as an
   intersection operand.
 \end{enumerate}
 
 \begin{align}
-  \Gamma\left(\bigcap_n \chi_n\right) &= \varPhi_{\Gamma \circ\, \cap}\, \Gamma(\chi_k)_{k \rightarrow n} \label{eq:andapply}\tag{\code{and}-apply}\\
+  \Gamma\left(\bigcap_n \chi_n\right) &= \varPhi_{\Gamma \circ \cap}\, \Gamma(\chi_k)_{k \rightarrow n} \label{eq:andapply}\tag{\code{and}-apply}\\
   \Gamma\left(\chi \cap \bigcup_n I_n\right) &= \bigcup_n \Gamma\left(\Gamma(\chi) \cap I_n\right) \label{eq:anddist1}\tag{\code{and}-distribution}\\
   \Gamma\left(\bigcup_n I_n \cap I\right) &= \bigcup_n \Gamma(I_n \cap I) \label{eq:anddist2}\tag{\code{and}-distribution'}\\
   \Gamma(I_1 \cap I_2) &= \mcode{(interval-and $I_1$ $I_2$)} \label{eq:andfin}\tag{\code{and}-final}
