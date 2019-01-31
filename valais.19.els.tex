@@ -171,6 +171,7 @@ accuracy and even about efficiency.
 
 
 \section{The Common Lisp type system}
+\label{sec:cltypes}
 \subsection{Type specifiers}
 Common Lisp types are not manipulated directly as they are in other languages
 such as C++. Instead, the type to be
@@ -1122,14 +1123,33 @@ conditions---our implementation already outperforms \sbcl's, as shown in
 figure~\ref{fig:good}.
 
 \section{Conclusion and Future Work}
-[...]
+Throughout this article we presented our implementation of Baker's decision
+procedure. In Section~\ref{sec:cltypes} we introduced the Common Lisp type
+system, the notion of type specifier and some vocabulary. In
+Section~\ref{sec:pre} we explained how to pre-process the caller's type
+specifiers to make the work of the expert sub-procedures presented in
+Section~\ref{sec:exp} easier. We described our implementation for the symbolic,
+\code{member}, range and logical type specifiers. We also gave some insights
+about the implementation for the \code{array} and \code{cons} type specifiers.
+We finally presented some early efficiency measures, which are globally
+encouraging.
+
+Our implementation is still a work in progress and highly experimental. But with
+some cleaning and the implementation of both \code{array} and \code{cons} expert
+sub-procedures, it could be a viable alternative to existing \code{subtypep}
+implementations. We \emph{will} have open sourced its code by then.
+We still have to find a solution for the \code{satisfies} type specifier and the
+related uncertainty. Indeed, in some situations, \code{subtypep} still can
+answer even though the type specifier is involved. For example, in
+\code{(subtypep 'string '(and number (satisfies evenp)))}, as the second operand
+is guaranteed to be a subtype of \code{number}, the predicate can safely return
+false. Finally, a lot of measures on accuracy and efficiency are needed to
+assert whether Baker intuition about his procedure was correct or not.
 
 Even if, in the future, we are to conclude that our implementation is less
 efficient than those which already exists, Baker's algorithm would still likely to
-improve the predicate's accuracy. Users would then have the ability to
+improve the predicate's accuracy. Lispers would then have the ability to
 choose whichever \code{subtypep} implementation fits their needs the best.
-
-[...]
 
 \bibliography{common}
 
