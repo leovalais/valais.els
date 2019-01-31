@@ -1,0 +1,95 @@
+% autocreated by print-ltxdat  tag=MEMBER types
+\begin{tikzpicture}
+\begin{axis}[
+ lua backend=false,
+ xmode=log,
+ ymode=log,
+ title=MEMBER types,
+ xmajorgrids,
+ xminorgrids,
+ ymajorgrids,
+ xticklabel style={font=\large},
+ yticklabel style={font=\large},
+ label style={font=\tiny}
+]
+% PARAMETERIZED-MDTD-BDD-GRAPH
+\definecolor{colorff4444}{RGB}{255,68,68}
+\addplot[line width=1.8pt,
+ color=colorff4444] coordinates {
+(21, 0.004)
+(60, 0.078)
+(88, 1.104)
+(132, 1.5116)
+(176, 1.7186667)
+(187, 2.0424)
+(198, 2.0424)
+(275, 2.363)
+};
+% MDTD-BDD-GRAPH
+\definecolor{color8FB0FF}{RGB}{143,176,255}
+\addplot[line width=1.8pt,
+ color=color8FB0FF] coordinates {
+(66, 0.73233336)
+(70, 0.73233336)
+(99, 0.73233336)
+(110, 0.73233336)
+(121, 0.73233336)
+(132, 0.73233336)
+};
+% MDTD-BDD
+\definecolor{color63FFAC}{RGB}{99,255,172}
+\addplot[line width=1.8pt,
+ color=color63FFAC] coordinates {
+(50, 0.016)
+(110, 1.0192001)
+(121, 1.7936667)
+(143, 1.7534286)
+(154, 1.7534286)
+(220, 1.7534286)
+(242, 2.008)
+(275, 2.328)
+};
+% MDTD-GRAPH
+\definecolor{color006FA6}{RGB}{0,111,166}
+\addplot[line width=1.8pt,
+ color=color006FA6] coordinates {
+(4, 0.002)
+(99, 2.2154999)
+(121, 2.2154999)
+(132, 2.2154999)
+(187, 2.2154999)
+};
+% MDTD-SAT
+\definecolor{color008941}{RGB}{0,137,65}
+\addplot[line width=1.8pt,
+ color=color008941] coordinates {
+(28, 5.0e-5)
+(88, 0.015000001)
+(132, 2.0433333)
+(220, 3.062)
+};
+% MDTD-RTEV2
+\definecolor{color6A3A4C}{RGB}{106,58,76}
+\addplot[line width=1.8pt,
+ color=color6A3A4C] coordinates {
+(6, 5.0e-5)
+(18, 0.002)
+(70, 0.01)
+(154, 0.035)
+(176, 0.035)
+(198, 0.035)
+(220, 0.035)
+(242, 0.035)
+(275, 0.035)
+};
+% MDTD-BASELINE
+\definecolor{colorFF34FF}{RGB}{255,52,255}
+\addplot[line width=1.8pt,
+ color=colorFF34FF] coordinates {
+(6, 5.0e-5)
+(32, 0.007)
+(60, 0.007)
+(154, 0.034)
+};
+\end{axis}
+\end{tikzpicture}

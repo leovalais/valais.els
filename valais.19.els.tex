@@ -15,6 +15,7 @@
 \usepackage{amsthm} % example env
 \usepackage{enumitem} % description env
 \usepackage{tikz}
+\usepackage{pgfplots}
 
 \newcommand\asterism{\medskip\noindent\textcolor{black!65}{\small\centerline{$\phantom{x}_{*\,\,\,*}^{\,\,\,*}$}}\smallskip}
 \newcommand\intvl[1]{\llbracket#1\rrbracket}
@@ -1068,13 +1069,59 @@ exponential time is ``acceptable'' (as it is for ranges) before rejecting it.
 The accuracy of existing \code{subtypep} procedures for the \code{cons} type
 specifier also needs to be studied.
 
+
 \section{Early results}
 \label{sec:res}
+\newcommand\jimscale{0.6}
+\newcommand\jimgraph[1]{\scalebox{\jimscale}{\input{assets/19/#1}}}
 
-Figure X shows that heavy users of \code{member} seems to experience a slower
-execution. Perhaps, as predicted by Baker, the reason is that the systematic
-registration of the elements makes the size of the bit-vector grow quickly, thus
-making every subsequent operation slower.
+\begin{figure}
+  \centering
+  \renewcommand\jimscale{0.5}
+  \begin{tabular}{cc}
+    \jimgraph{big-member-smooth.ltxdat} % integer ranges
+    &\jimgraph{big-member-smooth.ltxdat} % subtypes of number
+  \end{tabular}
+  \caption{Performance in the range type kingdom}
+  \label{fig:bad}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \jimgraph{big-member-smooth.ltxdat}
+  \caption{Performance for \code{member} type specifiers}
+  \label{fig:perfmember}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \renewcommand\jimscale{0.5}
+  \begin{tabular}{cc}
+    \jimgraph{big-member-smooth.ltxdat} % subtypes of t
+    &\jimgraph{big-member-smooth.ltxdat} % subtypes of condition
+  \end{tabular}
+  \caption{Performance for symbolic type specifiers}
+  \label{fig:good}
+\end{figure}
+
+Our implementation of \code{subtypep} is still in active development and very
+experimental. No serious optimization work has been made. Nonetheless, Newton
+has compared in \cite{newton.18.phd} the performances of several \code{subtypep}
+highly dependent algorithms, both using the implementation of \sbcl{} and ours.
+These results are only presented here as complementary information.
+
+As expected, our implementation is often slower, but not dramatically, which is
+encouraging. Figure \ref{fig:bad} shows that our implementation is overall
+slower in the range type kingdom.
+
+Figure \ref{fig:perfmember} shows that heavy users of \code{member} seems to
+experience a slower execution. Perhaps, as predicted by Baker, the reason is
+that the systematic registration of the elements makes the size of the
+bit-vector grow quickly, thus making every subsequent operation slower.
+
+For the symbolic type specifiers---primitive types, \textsc{Clos} classes and
+conditions---our implementation already outperforms \sbcl's, as shown in
+figure~\ref{fig:good}.
 
 \section{Conclusion and Future Work}
 [...]
