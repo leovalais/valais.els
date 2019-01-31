@@ -906,6 +906,7 @@ We also need the following \code{interval} functions:
 \end{listing}
 
 \subsubsection{Type diversity reduction}
+\label{sec:tdred}
 Functions working with intervals must be aware of the relationship of the types
 of these intervals. For example, the intersection of two \code{integer}
 intervals might be non-empty whereas the intersection of one \code{integer} and
@@ -963,7 +964,76 @@ the six types above, with the bounds (if some) of their original type preserved.
 \end{table}
 
 \subsubsection{Canonicalization}
+To check the emptiness of the interval expression, it is canonicalized. Let
+$\Gamma$ be the canonicalization function. Its parameter is either an
+\code{interval} $I$ or an operation on intervals $\chi$ (intersection, union or
+complement). $\Gamma$ either returns $\emptyset$, an \code{interval} or a
+\emph{union of disjoint intervals}---the three possible outcomes of a
+mathematical interval canonicalization.
+
+First, anytime $\Gamma$ encounters or return a union, it must ensure that it is
+\emph{flattened} (no nested unions). It must also ensure that the intervals
+inside the union are \emph{disjoint}. As shown in Section \ref{sec:tdred},
+intervals with different types are necessarily disjoint. \emph{Touching
+  intervals} \cite{baker1992} are \emph{merged} using \code{interval-or}.
+
+$\Gamma(\emptyset)$ and $\Gamma(I)$ are straightforward, as shown in Eq.
+\ref{eq:gammavoid} and Eq. \ref{eq:gammaI}. These are the terminal cases of the
+recursion of $\Gamma$.
+
+Intersections (\code{and} logical type specifiers) are reduced as soon as they
+are encountered. Their operands needs to be processed by $\Gamma$ first (hence
+the implicit mapping ``$k \rightarrow n$''). Eq. \ref{eq:andapply} shows how to
+reduce intersections. The $\varPhi_f$ operator denotes a \emph{fold}
+\cite{Hutton1999fold} operation using the function $f$. $\Gamma \circ\, \cap$
+denotes the composition of the $\Gamma$ function and the intersection operator.
+To break it down in a bottom-up fashion:
+\begin{enumerate}
+\item Eq. \ref{eq:andfin} --- the application of the intersection function.
+\item Eq. \ref{eq:anddist2} --- the distribution of the intersection in the union.
+  Next step is Eq. \ref{eq:andfin}.
+\item Eq. \ref{eq:anddist1} --- also the distribution of the intersection in the
+  union. However, $\Gamma(\chi)$ may return an union, leading the execution
+  either to Eq. \ref{eq:anddist2} or directly to Eq. \ref{eq:andfin}.
+\item Eq. \ref{eq:andapply} --- the canonicalization of the $\chi_n$ forms using
+  mapping. The results are then folded using $\Gamma \circ\, \cap$, thus
+  initiating the recursive intersection distribution. Note that a possible
+  optimization is to stop the folding as soon as $\emptyset$ is to be used as an
+  intersection operand.
+\end{enumerate}
+
+Complements (\code{not} logical type specifiers) are also reduced as soon as
+they are encountered. Their only operand is first canonicalized. Complementing
+$U$ in \code{number} (the top-level type of the range type kingdom) is
+equivalent to the difference $\mcode{number} - U$, as shown in Eq.
+\ref{eq:notapply}. The difference canonicalization goes through a similar
+recursive distribution path than the intersection, that is Eq.
+\ref{eq:minusdist} and then Eq. \ref{eq:minusapply}. Note that this path is
+taken every time since the interval difference is an internal operation and that
+its left-hand operand is always $\mathcal{U}$.
+
+\begingroup
+\allowdisplaybreaks
+\begin{align}
+  \Gamma(\emptyset) &= \emptyset \label{eq:gammavoid}\tag{end-$\emptyset$}\\
+  \Gamma(I) &= I \label{eq:gammaI}\tag{end-$I$}\\
+  \nonumber\\
+  \Gamma\left(\bigcap_n \chi_n\right) &= \varPhi_{\Gamma \circ\, \cap}\, \Gamma(\chi_k)_{k \rightarrow n} \label{eq:andapply}\tag{\code{and}-apply}\\
+  \Gamma\left(\chi \cap \bigcup_n I_n\right) &= \bigcup_n \Gamma\left(\Gamma(\chi) \cap I_n\right) \label{eq:anddist1}\tag{\code{and}-distribution}\\
+  \Gamma\left(\bigcup_n I_n \cap I\right) &= \bigcup_n \Gamma(I_n \cap I) \label{eq:anddist2}\tag{\code{and}-distribution'}\\
+  \Gamma(I_1 \cap I_2) &= \mcode{(interval-and $I_1$ $I_2$)} \label{eq:andfin}\tag{\code{and}-final}\\
+  \nonumber\\
+  \Gamma\left(\overline{\chi}\right) &= \Gamma\left(\mathcal{U} - \Gamma(\chi)\right) \label{eq:notapply}\tag{\code{not}-apply}\\
+  \mathcal{U} &= \langle\text{\it type diversity reduction of \code{(number * *)}}\rangle \nonumber\\
+  \Gamma\left(\chi - \bigcup_n I_n\right) &= \bigcup_n \Gamma(\chi - I_n) \label{eq:minusdist}\tag{\code{minus}-distribution} \\
+  \Gamma\left(\bigcup_n I_n - I'\right) &= \bigcup_n \mcode{(interval-minus $I_n$ $I'$)} \label{eq:minusapply}\tag{\code{minus}-apply}
+\end{align}
+\endgroup
+
 \subsubsection{Range emptiness check}
+Once an interval expression canonicalized, checking its emptiness is trivial.
+The predicate \code{interval-empty-p}, given the result of the first $\Gamma$
+call, just returns the Boolean that \code{null-numeric-type-p} has to return.
 
 
 \subsection{Array types and \code[\large]{cons} type specifiers}
@@ -999,6 +1069,11 @@ specifier also needs to be studied.
 
 \section{Early results}
 \label{sec:res}
+
+Figure X shows that heavy users of \code{member} seems to experience a slower
+execution. Perhaps, as predicted by Baker, the reason is that the systematic
+registration of the elements makes the size of the bit-vector grow quickly, thus
+making every subsequent operation slower.
 
 \section{Conclusion and Future Work}
 [...]
