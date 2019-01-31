@@ -95,24 +95,22 @@
 
 % \toappear{}
 \begin{abstract}
-  The Common Lisp standard allows the function \code{subtypep} to return
-  the couple of values \code{(nil nil)} when it cannot determine the
-  sub-typing relationship between two types. That permission to fail
-  is granted because the type system allows the usage of the type specifier
-  \code{(satisfies P)}, understood as the type containing all the
-  elements for which the predicate \code{P} returns true. Since \code{subtypep}
-  cannot reasonably be allowed to evaluate \code{P}, it cannot answer many
-  interrogations involving such a type specifier---hence the permission to fail.
-  Implementations of the predicate often abuse such permission, making the
-  function both inaccurate and unreliable. That behavior is troublesome for some
-  applications, in particular for the compiler itself which may use
-  \code{subtypep} for optimization purposes. Seeking more precision, H. Baker
-  describes a decision procedure which he claims to be more accurate and
-  efficient than the average implementation. However, he did not open source the
-  code. We also have not but we plan to do so as soon as it is presentable.
-  In this article, we present our partial implementation of his procedure, detail
-  our understanding of his algorithm, argument in favor or against some of
-  his choices and clarify parts of his description.
+  We present here our partial implementation of Baker's decision procedure for
+  \code{subtypep}. In his article ``A Decision Procedure for Common Lisp's
+  \code{SUBTYPEP} Predicate'', he claims to provide implementation guidelines to
+  obtain a \code{subtypep} more accurate and as efficient as the average
+  implementation. But he did not provide any serious implementation and his
+  description is sometimes obscure. In this paper we present our implementation
+  of half of its procedure, only supporting primitive types, \textsc{Clos}
+  classes, \code{member}, range and logical type specifiers.
+  We explain in our words our understanding of his procedure, with much more
+  detail and examples than in Baker's article. We therefore clarify many parts
+  of his description and fill some of its gaps or omissions.
+  We also argument in favor and against some of his choices and present our
+  alternative solutions. We also provide some proofs that might
+  be missing in his article and some early efficiency results. We have not
+  released any code yet but we plan to open source it as soon as it is
+  presentable.
 \end{abstract}
 
 \maketitle
