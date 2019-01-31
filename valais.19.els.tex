@@ -981,6 +981,11 @@ $\Gamma(\emptyset)$ and $\Gamma(I)$ are straightforward, as shown in Eq.
 \ref{eq:gammavoid} and Eq. \ref{eq:gammaI}. These are the terminal cases of the
 recursion of $\Gamma$.
 
+\begin{align}
+  \Gamma(\emptyset) &= \emptyset \label{eq:gammavoid}\tag{end-$\emptyset$}\\
+  \Gamma(I) &= I \label{eq:gammaI}\tag{end-$I$}
+\end{align}
+
 Intersections (\code{and} logical type specifiers) are reduced as soon as they
 are encountered. Their operands needs to be processed by $\Gamma$ first (hence
 the implicit mapping ``$k \rightarrow n$''). Eq. \ref{eq:andapply} shows how to
@@ -1002,6 +1007,13 @@ To break it down in a bottom-up fashion:
   intersection operand.
 \end{enumerate}
 
+\begin{align}
+  \Gamma\left(\bigcap_n \chi_n\right) &= \varPhi_{\Gamma \circ\, \cap}\, \Gamma(\chi_k)_{k \rightarrow n} \label{eq:andapply}\tag{\code{and}-apply}\\
+  \Gamma\left(\chi \cap \bigcup_n I_n\right) &= \bigcup_n \Gamma\left(\Gamma(\chi) \cap I_n\right) \label{eq:anddist1}\tag{\code{and}-distribution}\\
+  \Gamma\left(\bigcup_n I_n \cap I\right) &= \bigcup_n \Gamma(I_n \cap I) \label{eq:anddist2}\tag{\code{and}-distribution'}\\
+  \Gamma(I_1 \cap I_2) &= \mcode{(interval-and $I_1$ $I_2$)} \label{eq:andfin}\tag{\code{and}-final}
+\end{align}
+
 Complements (\code{not} logical type specifiers) are also reduced as soon as
 they are encountered. Their only operand is first canonicalized. Complementing
 $U$ in \code{number} (the top-level type of the range type kingdom) is
@@ -1012,23 +1024,12 @@ recursive distribution path than the intersection, that is Eq.
 taken every time since the interval difference is an internal operation and that
 its left-hand operand is always $\mathcal{U}$.
 
-\begingroup
-\allowdisplaybreaks
 \begin{align}
-  \Gamma(\emptyset) &= \emptyset \label{eq:gammavoid}\tag{end-$\emptyset$}\\
-  \Gamma(I) &= I \label{eq:gammaI}\tag{end-$I$}\\
-  \nonumber\\
-  \Gamma\left(\bigcap_n \chi_n\right) &= \varPhi_{\Gamma \circ\, \cap}\, \Gamma(\chi_k)_{k \rightarrow n} \label{eq:andapply}\tag{\code{and}-apply}\\
-  \Gamma\left(\chi \cap \bigcup_n I_n\right) &= \bigcup_n \Gamma\left(\Gamma(\chi) \cap I_n\right) \label{eq:anddist1}\tag{\code{and}-distribution}\\
-  \Gamma\left(\bigcup_n I_n \cap I\right) &= \bigcup_n \Gamma(I_n \cap I) \label{eq:anddist2}\tag{\code{and}-distribution'}\\
-  \Gamma(I_1 \cap I_2) &= \mcode{(interval-and $I_1$ $I_2$)} \label{eq:andfin}\tag{\code{and}-final}\\
-  \nonumber\\
   \Gamma\left(\overline{\chi}\right) &= \Gamma\left(\mathcal{U} - \Gamma(\chi)\right) \label{eq:notapply}\tag{\code{not}-apply}\\
   \mathcal{U} &= \langle\text{\it type diversity reduction of \code{(number * *)}}\rangle \nonumber\\
   \Gamma\left(\chi - \bigcup_n I_n\right) &= \bigcup_n \Gamma(\chi - I_n) \label{eq:minusdist}\tag{\code{minus}-distribution} \\
   \Gamma\left(\bigcup_n I_n - I'\right) &= \bigcup_n \mcode{(interval-minus $I_n$ $I'$)} \label{eq:minusapply}\tag{\code{minus}-apply}
 \end{align}
-\endgroup
 
 \subsubsection{Range emptiness check}
 Once an interval expression canonicalized, checking its emptiness is trivial.
