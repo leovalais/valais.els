@@ -511,8 +511,8 @@ SLIME> (split  '(and (or symbol (float * *) (ratio * *))
 \end{listing}
 
 \subsection{Type reformulation}
-For any types $T$ and $U$,
-\(T \subseteq U \Leftrightarrow T \cap \overline{U} = \emptyset\).
+For any types $U$ and $V$,
+\(U \subseteq V \Leftrightarrow U \cap \overline{V} = \emptyset\).
 Therefore, for any type specifiers \code{U} and \code{V}, when
 \code{(subtypep U V)} returns \code{T T}, then
 \code{(subtypep `(and ,U (not ,V)) nil)} also returns \code{T T}.
@@ -531,8 +531,8 @@ point of view. It shows that, according to Figure \ref{fig:flow}, both type
 specifiers are processed independently, split into two kingdoms (literal and
 numeric types) and unified in an \code{(and U (not V))} fashion. The
 expert sub-procedures, \code{null-literal-type-p} and \code{null-numeric-type-p},
-each accept one argument---a type specifier, say $T$---and returns a Boolean
-indicating whether $T$ describes the empty type (\code{nil}).
+each accept one argument---a type specifier, say $U$---and returns a Boolean
+indicating whether $U$ describes the empty type (\code{nil}).
 
 Each sub-procedure answers restricted to its kingdom---as no type can (at this
 point of the procedure) belong to two different kingdoms, as shown in
@@ -595,22 +595,22 @@ which Baker ignores in his article, in Section \ref{sec:expoth}.
 \subsubsection{Theory}
 To represent types in the literal types kingdom, we suppose at first that there
 is a way to enumerate every element in \code{t}, say $e_1, e_2, \dots, e_\omega$.
-Then, let $t_1, t_2, \dots, t_\omega$ be all the (non-strict) subtypes of the
-top-level type \code{t}. We associate to each pair $\left(t_i, e_j\right)$ the
-bit $b_{ij}$ with the value $1$ when $e_j \in t_i$ and $0$ when $e_j \notin t_i$.
-Let $bv_i$ be the \emph{representative bit-vector} associated to the type $t_i$,
+Then, let $u_1, u_2, \dots, u_\omega$ be all the (non-strict) subtypes of the
+top-level type \code{t}. We associate to each pair $\left(u_i, e_j\right)$ the
+bit $b_{ij}$ with the value $1$ when $e_j \in u_i$ and $0$ when $e_j \notin u_i$.
+Let $bv_i$ be the \emph{representative bit-vector} associated to the type $u_i$,
 defined by $\left[b_{i0}, b_{i1}, \dots, b_{i\omega}\right]$. These
 bit-vectors are the rows of the infinite matrix on Eq. \ref{eq:matrix} which
 illustrates the system.
 
 \[
   \bordermatrix{
-            &e_1   &e_2   &e_3    &e_4    &\cdots&e_\omega \cr
-    t_1     &1     &0     &0      &0     &\cdots&1       \cr
-    t_2     &0     &1     &1      &0     &\cdots&0       \cr
-    t_3     &0     &0     &0      &1     &\cdots&0       \cr
+            &e_1   &e_2   &e_3   &e_4   &\cdots&e_\omega \cr
+    u_1     &1     &0     &0     &0     &\cdots&1       \cr
+    u_2     &0     &1     &1     &0     &\cdots&0       \cr
+    u_3     &0     &0     &0     &1     &\cdots&0       \cr
     \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots  \cr
-    t_\omega&1     &0     &1      &0     &\cdots&0
+    u_\omega&1     &0     &1     &0     &\cdots&0
   } \label{eq:matrix} \tag{$B_{\omega\omega}$}
 \]
 
@@ -618,24 +618,24 @@ illustrates the system.
   \emph{\small Each type has a unique bit-vector representation.}
   \newcommand{\reldiff}[2]{#1 \cup #2 \backslash #1 \cap #2}
 
-  Let $t_i$ and $t_j$ be two distinct types. Thus, $\reldiff{t_i}{t_j} \neq \emptyset$.
-  Let $e_k \in \reldiff{t_i}{t_j}$. By definition, we have $b_{ik} \neq b_{jk}$.
+  Let $u_i$ and $u_j$ be two distinct types. Thus, $\reldiff{u_i}{u_j} \neq \emptyset$.
+  Let $e_k \in \reldiff{u_i}{u_j}$. By definition, we have $b_{ik} \neq b_{jk}$.
   Hence $bv_i \neq bv_j$. Two distinct types are represented by two different
   bit-vectors.
 
   Similarly, let $bv_i$ and $bv_j$ be two different bit-vectors. Then it
   necessarily exists a $k$ such as $b_{ik} \neq b_{jk}$. Therefore
-  $\exists e_k, \left(e_k \notin t_i \vee e_k \notin t_j\right) \wedge e_k
-  \notin t_i \cap t_j$. Hence $t_i \neq t_j$. \qedhere
+  $\exists e_k, \left(e_k \notin u_i \vee e_k \notin u_j\right) \wedge e_k
+  \notin u_i \cap u_j$. Hence $u_i \neq u_j$. \qedhere
 \end{proof}
 
 \begin{proof}
   \emph{\small Type intersection, union and complement are equivalent to Boolean
     operations ``and'', ``or'' and ``not'' on representative bit-vectors.}
 
-  Let two types $t_i$ and $t_j$ in:
+  Let two types $u_i$ and $u_j$ in:
   \begin{enumerate}
-  \item Let $t_k = t_i \cup t_j$. By definition, $\forall l \in \mathbb{N} \cup
+  \item Let $u_k = u_i \cup u_j$. By definition, $\forall l \in \mathbb{N} \cup
     \{\omega\}, b_{kl} = 1$ iff $b_{il} = 1$ or $b_{jl} = 1$, that is $b_{kl} =
     b_{il} \vee b_{jl}$. Thus, also by definition:
     \begin{align*}
@@ -645,7 +645,7 @@ illustrates the system.
     \end{align*}
   \item We proceed similarly for the intersection and the Boolean logical operator
     ``and'' ($\wedge$).
-  \item Let $t_k = \overline{t_i}$. We have by definition $\forall l \in
+  \item Let $u_k = \overline{u_i}$. We have by definition $\forall l \in
     \mathbb{N} \cup \{\omega\}, b_{kl} = \neg b_{il}$. Then:
     \begin{align*}
       bv_k &= \left[\neg b_{i0}, \neg b_{i1}, \dots, \neg b_{i\omega}\right]  \\
@@ -653,23 +653,6 @@ illustrates the system.
     \end{align*}
   \end{enumerate}
 \end{proof}
-
-% Consequently, we have:
-% \begin{itemize}
-% \item with $u_{n+1} = $ \code{(and $u_1$ $\cdots$ $u_n$)},
-%   \(bv_{n+1} = \bigwedge_{i=1}^n bv_i\) ;
-% \item with $u_{n+1} = $ \code{(or $u_1$ $\cdots$ $u_n$)},
-%   \(bv_{n+1} = \bigvee_{i=1}^n bv_i\) ;
-% \item with $u_{n+1} = $ \code{(not $u_n$)},
-%   \(bv_{n+1} = \neg bv_n\).
-% \end{itemize}
-
-% On each \code{null-literal-type-p} call, we look up each symbolic type
-% specifiers' (e.g., \code{symbol}) and \code{member} expressions' (roughly
-% anonymous types) bit-vectors in the matrix, combine these
-% on each logical type specifier using the appropriate Boolean operation. Finally,
-% we compare the bit-vector against the bit-vector of \code{nil}, that is
-% $\left[0, 0, \dots, 0\right]$, and return the result.
 
 \subsubsection{Implementation}
 Common Lisp cannot enumerate all the possible subtypes of \code{t} nor all of
@@ -680,15 +663,15 @@ We also do \emph{not need to enumerate all the elements of these types}.
 It is that aspect of the procedure of Baker that makes it both powerful and
 difficult to understand at first. We only need \emph{sufficiently many} elements
 from a type to distinguish it from the other types.
-Because we are now considering only a \emph{finite} number of types, say $t_1,
-\dots, t_n$, to register a new type $t_{n+1}$ to our (now \emph{finite}) matrix,
-we only need to find an element $e \in t_{n+1}$ such as $e \notin t_1 \cup \dots
-\cup t_n$.
+Because we are now considering only a \emph{finite} number of types, say $u_1,
+\dots, u_n$, to register a new type $u_{n+1}$ to our (now \emph{finite}) matrix,
+we only need to find an element $e \in u_{n+1}$ such as $e \notin u_1 \cup \dots
+\cup u_n$.
 
-Now let's suppose that the type specifier of $t_{n+1}$ is in fact \code{(member
+Now let's suppose that the type specifier of $u_{n+1}$ is in fact \code{(member
   $e$)}, that $e$ is itself chosen as a representative element for another type,
-say $t_k$, and that $t_k$ is only distinguished from the other registered types
-by that element $e$. $t_{n+1}$ and $t_k$ would then have the same bit-vector
+say $u_k$, and that $u_k$ is only distinguished from the other registered types
+by that element $e$. $u_{n+1}$ and $u_k$ would then have the same bit-vector
 representation when these types are likely to be distinct. The general solution
 for that kind of problem is to register \emph{all} the elements found inside the
 \code{member} type specifier. When there is a conflicting element $e$ already
@@ -699,19 +682,19 @@ type specifiers.
 
 To implement that registration matrix system, we use two functions:
 \sloppy${B : \text{type name} \longmapsto \text{bit-vector}}$,
-with $B(t_i) = bv_i$, and
+with $B(u_i) = bv_i$, and
 \sloppy${I : \text{representative} \longmapsto \text{bit index}}$,
 with $I(e_i) = i - 1$.
 Baker suggests in his small example \cite{baker1992} using the operator
 \code{set} which is deprecated in modern Common Lisp programming. Instead, we
 use hash tables to represent these functions. Type names are \code{symbol}s,
 bit-vectors are \code{bit-vector}s and element indexes are positive
-\code{integer}s. To register a new type $t_{n+1}$, it is added to the $B$ hash
+\code{integer}s. To register a new type $u_{n+1}$, it is added to the $B$ hash
 table and its bit-vector content $b_{(n+1)i}$ is evaluated for all the existing
 representatives ($i \in \intvl{1;m}$). To register a new representative
 $e_{m+1}$, it is added to the $I$ hash table with the index $m$. Then we add one
 bit (the $m$-th bit) to each bit-vector $bv_i$ and evaluate it in respect to the
-type $t_i$. Thus, to retrieve the bit-vector of a registered primitive or
+type $u_i$. Thus, to retrieve the bit-vector of a registered primitive or
 user-defined type $t$, we just lookup its value $B(t)$. To compute the
 bit-vector of a \code{member} expression \code{(member $e_1$ $\cdots$ $e_n$)},
 we use the value
@@ -728,7 +711,7 @@ condition) or a \code{member} expression.
 Since primitive types are known (c.f. table 4.2 of
 \cite{bib:ansi.94.cl.type-specifiers}), their representative elements are chosen
 at compile-time.
-The $t_{n+1}$ subtlety above should still be kept in mind. For
+The $u_{n+1}$ subtlety above should still be kept in mind. For
 instance, the type \code{null} is a subtype of both \code{symbol} and
 \code{list} ; so three representative elements are needed: \code{nil}, a non-empty
 list and a symbol other than \code{nil}. Note that some primitive types are an
@@ -840,9 +823,6 @@ misinterpretation can occur).
 We have not addressed the problem of a type
 specifier involving a user class $C$ and a \code{member} expression containing
 the class prototype of $C$ yet.
-
-% NOTE Perhaps talk about doubling the size of bit-vector instead of adding one
-% bit each time.
 
 \subsection{Procedure for numeric types}
 \label{sec:expnum}
