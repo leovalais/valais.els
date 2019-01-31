@@ -972,11 +972,12 @@ complement). $\Gamma$ either returns $\emptyset$, an \code{interval} or a
 \emph{union of disjoint intervals}---the three possible outcomes of a
 mathematical interval canonicalization.
 
-First, anytime $\Gamma$ encounters or returns a union, it must ensure that it is
-\emph{flattened} (no nested unions). It must also ensure that the intervals
-inside the union are \emph{disjoint}. As shown in Section \ref{sec:tdred},
-intervals with different types are necessarily disjoint. \emph{Touching
-  intervals} \cite{baker1992} are \emph{merged} using \code{interval-or}.
+First and foremost, anytime $\Gamma$ encounters or returns a union, it must
+ensure that it is \emph{flattened} (no nested unions). It must also ensure that
+the intervals inside the union are \emph{disjoint}. As shown in
+Section~\ref{sec:tdred}, intervals with different types are necessarily
+disjoint. \emph{Touching intervals} \cite{baker1992} are \emph{merged} using
+\code{interval-or}.
 
 $\Gamma(\emptyset)$ and $\Gamma(I)$ are straightforward, as shown in Eq.
 \ref{eq:gammavoid} and Eq. \ref{eq:gammaI}. These are the terminal cases of the
