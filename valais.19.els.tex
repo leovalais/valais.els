@@ -340,12 +340,9 @@ that function to make it compatible with Baker's algorithm while keeping the
 \code{deftype} expansion and the range canonicalization work. However we found,
 thanks to \cite{newton.18.phd} tools, that the function is responsible for most
 of the work of \code{subtypep}, as shown in Figure \ref{fig:specifiertype}
-\footnote{The \footcode{cached-subtypep-caching-call} is just a memoizing wrapper
-  around \sbcl's \footcode{subtypep} which is a bit more efficient than the raw
-  implementation}.
 Considering the lack of efficiency of that function and the fact that it would
-not be trivial to simplify it to only keep the interesting bits, we decided to
-stick to another, more cost-effective solution.
+not be trivial to simplify it to only keep the interesting bits, we decided on
+another, more cost-effective solution.
 
 The function \code{sb-ext:typexpand} takes a type specifier and tries to expand
 it (not recursively). It either returns the expansion result, or the input type
@@ -365,13 +362,18 @@ alias to expand again.
 
 \begin{figure}
   \centering
-  \newcommand\profgraph[1]{\includegraphics[scale=.40]{#1}}
+  \newcommand\profgraph[1]{\includegraphics[scale=.42,trim={1mm 1mm 4mm 5mm},clip]{#1}}
   \profgraph{assets/19/stGTstp}
   % \profgraph{assets/19/stEQstp}
-  \caption{\code{specifier-type} weight in \code{cl:subtypep} execution}
+  \caption{\code{specifier-type} weight in \code{cl:subtypep}
+    execution\textsuperscript{\it a}}
+  \footnotesize\textsuperscript{\it a}~\footcode{cached-subtypep-caching-call} is just a memoizing wrapper
+  around \sbcl's \footcode{subtypep} which is a bit more efficient than the raw
+  implementation.
   \label{fig:specifiertype}
   % \label{fig:stGTstp}
 \end{figure}
+
 
 \subsection{Numeric type specifiers conversion}
 \label{sec:numconv}
@@ -439,8 +441,8 @@ expressed as ranges. The next stage---expert sub-procedures---requires literal
 and numeric types to be separated.
 
 Thus the top type \code{t} is divided into two\footnote{
-  One per kingdom actually, but since out implementation only support
-  two---literal and range types---we only focus our attention these.
+  One per kingdom actually, but since our implementation only supports
+  two---literal and range types---we only focus our attention on these.
 } disjoint subtypes---``kingdoms'' as Baker says. The previous step, described in
 Section \ref{sec:numconv}, ensures that the representation (in terms of type
 specifiers) of the types in each kingdom is different. All numeric types are
@@ -465,10 +467,10 @@ $P$ and a type specifier $U$ and returns:
 Given the predicate \code{literal-type-p} and a type $U$, \code{type-keep-if}
 returns $U$ with every inner type specifier that describes a non-literal type
 replaced by \code{nil} (interpreted as the \textit{empty type}). The result is then a
-subtype of \code{(and t (not number))}.
+subtype of \code{(and (not number) (not (array * *)))}.
 Likewise, given the predicate \code{range-type-p}, this function returns $U$
 with every non-range inner type specifier replaced by \code{nil} (interpreted
-this time as the \textit{empty range}). Thus the result is a subtype of \code{number}.
+this time as the \textit{empty range}). Thus, the result is a subtype of \code{number}.
 Therefore, \code{split} can easily be implemented in terms of
 \code{type-keep-if}, as shown in Listing \ref{lst:split}.
 
