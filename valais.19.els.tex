@@ -129,12 +129,12 @@ given two arbitrary predicates \code{F} and \code{G}, there is no way
 \code{subtypep} can answer the question \code{(subtypep '(satisfies F)
   '(satisfies G))}.
 
-However, some implementations abuse of the permission to return \code{(nil nil)}.
+However, some implementations abuse the permission to return \code{(nil nil)}.
 For example, in \sbcl{} 1.4.10 (the implementation we are currently focusing our
 efforts on), {\small\code{(satisfies 'boolean 'keyword)}} returns
 \code{(nil nil)}, thus violating the standard\footnote{The Common Lisp standard
   requires that no invocation of \footcode{subtypep} involving only primitive types
-  returns \footcode{(nil nil)}.}. The definition of the \code{keyword} type is
+  return \footcode{(nil nil)}.}. The definition of the \code{keyword} type is
 responsible for this failure: as shown in Listing \ref{lst:keyword}, it
 involves a \code{satisfies} type specifier\footnote{%
   C.f. bug \#1533685 in \sbcl{} bug tracker.
@@ -143,13 +143,13 @@ involves a \code{satisfies} type specifier\footnote{%
 Another kind of problem for which \code{subtypep}'s accuracy matters is the
 optimization of the \code{typecase} construct as shown in \cite{newton.18.phd}
 and \cite{newton.18.els}. The aim is to remove redundant checks in the construct
-and their approach is to use binary decision diagrams. However, to build such a
+and the approach is to use binary decision diagrams. However, to build such a
 structure, \code{subtypep} is repeatedly used. The unreliability of the
 predicate leads here to many lost BDD reductions and therefore to the
 generation of sub-optimal code.
 
 Our implementation is still in active development, currently targets
-\sbcl{} and focuses almost entirely on results accuracy. It supports
+\sbcl{} and focuses almost entirely on result accuracy. It supports
 \emph{primitive} types, \emph{user-defined} types (\code{deftype}, classes and structures),
 \emph{\code{member} (and \code{eql})} type specifiers and \emph{ranges} (e.g.,
 \code{(integer * 12)}). We present our strategy for implementing each one
