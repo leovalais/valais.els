@@ -135,7 +135,7 @@ efforts on), {\small\code{(satisfies 'boolean 'keyword)}} returns
 \code{(nil nil)}, thus violating the standard\footnote{The Common Lisp standard
   requires that no invocation of \footcode{subtypep} involving only primitive types
   return \footcode{(nil nil)}.}. The definition of the \code{keyword} type is
-responsible for this failure: as shown in Listing \ref{lst:keyword}, it
+responsible for this failure: as shown in Listing~\ref{lst:keyword}, it
 involves a \code{satisfies} type specifier\footnote{%
   C.f. bug \#1533685 in \sbcl{} bug tracker.
 }.
@@ -193,7 +193,7 @@ two type specifiers in fact describe the same type using two calls of
 
 It is possible to define \emph{parametric aliases} using the \code{deftype}
 construct. It is then possible to refer to a whole type specifier using its
-alias. Listing \ref{lst:deftype} shows an example of parametric
+alias. Listing~\ref{lst:deftype} shows an example of parametric
 \code{deftype}.
 
 \begin{listing}
@@ -279,13 +279,13 @@ There are other type kingdoms that Baker mentions in his article, such as the
 specifiers. Note that a type can belong to several kingdoms, as multiple type
 specifiers can describe it. For example, \code{integer} belongs to literal
 \emph{and} range kingdoms as the type specifiers \code{integer} (symbolic) and
-\code{(integer * *)} (range) both describe it. In Section \ref{sec:pre}, we
+\code{(integer * *)} (range) both describe it. In Section~\ref{sec:pre}, we
 describe how to guarantee that a given type is only described by one kind of
 type specifier, hence restricting it to \emph{one} kingdom.
 
 \section{Procedure's mechanisms overview}
 \label{sec:flow}
-Figure \ref{fig:flow} shows the internals of our implementation. Every step will
+Figure~\ref{fig:flow} shows the internals of our implementation. Every step will
 be detailed in the following sections. There are three \emph{major stages}:
 
 \begin{enumerate}
@@ -297,14 +297,14 @@ be detailed in the following sections. There are three \emph{major stages}:
   type representation differ. In order to achieve that, the type specifiers must
   also be split into equivalent subtype specifiers restricted to each concerned
   kingdom.
-  This stage is detailed in Section \ref{sec:pre}.
+  This stage is detailed in Section~\ref{sec:pre}.
 \item \emph{Expert sub-procedures} --- Once split, each subtype specifier is
   redirected to the appropriate expert sub-procedure. The job of such a procedure is to
   \emph{prove}, in its own kingdom, the assertion ``$A$ is a subtype of $B$'' to
   be \emph{wrong}.
   Our procedures currently only support literal and range type specifiers---an
   expert sub-procedure has been implemented only for these two kingdoms. This
-  stage is detailed in Section \ref{sec:exp}.
+  stage is detailed in Section~\ref{sec:exp}.
 \item \emph{Result conjunction} --- Eventually, all expert sub-procedures
   return (a Boolean) and the results are accumulated using conjunction.
   (In practice, as soon as one expert procedure returns false, \code{subtypep}
@@ -324,7 +324,7 @@ be detailed in the following sections. There are three \emph{major stages}:
 The very first step is to ensure that the type specifier is in its
 \emph{canonical form}, that is, having all its aliases expanded. This is done by
 the \code{expand} function. For example, considering the type created in
-Listing \ref{lst:deftype}, \code{(expand '(except 12))} should return \code{(not
+Listing~\ref{lst:deftype}, \code{(expand '(except 12))} should return \code{(not
   (eql 12))}.
 
 Unlike macro expansion, \code{deftype} expansion is not standardized in Common
@@ -339,7 +339,7 @@ type simplification---turning \code{(and integer string)} into
 that function to make it compatible with Baker's algorithm while keeping the
 \code{deftype} expansion and the range canonicalization work. However we found,
 thanks to \cite{newton.18.phd} tools, that the function is responsible for most
-of the work of \code{subtypep}, as shown in Figure \ref{fig:specifiertype}
+of the work of \code{subtypep}, as shown in Figure~\ref{fig:specifiertype}
 Considering the lack of efficiency of that function and the fact that it would
 not be trivial to simplify it to only keep the interesting bits, we decided on
 another, more cost-effective solution.
@@ -377,7 +377,7 @@ alias to expand again.
 
 \subsection{Numeric type specifiers conversion}
 \label{sec:numconv}
-As explained in Section \ref{sec:flow}, after pre-processing both type
+As explained in Section~\ref{sec:flow}, after pre-processing both type
 specifiers, the procedure splits in two expert sub-procedures: one for literal
 type specifiers and one for range type specifiers.
 Numeric types---types containing numbers (mathematically speaking)---can have
@@ -444,7 +444,7 @@ Thus the top type \code{t} is divided into two\footnote{
   One per kingdom actually, but since our implementation only supports
   two---literal and range types---we only focus our attention on these.
 } disjoint subtypes---``kingdoms'' as Baker says. The previous step, described in
-Section \ref{sec:numconv}, ensures that the representation (in terms of type
+Section~\ref{sec:numconv}, ensures that the representation (in terms of type
 specifiers) of the types in each kingdom is different. All numeric types are
 represented as ranges, and literal types as symbolic and \code{member} (without
 numbers) type specifiers.
@@ -472,7 +472,7 @@ Likewise, given the predicate \code{range-type-p}, this function returns $U$
 with every non-range inner type specifier replaced by \code{nil} (interpreted
 this time as the \textit{empty range}). Thus, the result is a subtype of \code{number}.
 Therefore, \code{split} can easily be implemented in terms of
-\code{type-keep-if}, as shown in Listing \ref{lst:split}.
+\code{type-keep-if}, as shown in Listing~\ref{lst:split}.
 
 \begin{listing}
 \begin{clcode}
@@ -512,8 +512,8 @@ easier to reason about, and implement).
 
 \section{Expert sub-procedures}
 \label{sec:exp}
-Listing \ref{lst:tdstp} shows how \code{subtypep} could be defined from a top-down
-point of view. It shows that, according to Figure \ref{fig:flow}, both type
+Listing~\ref{lst:tdstp} shows how \code{subtypep} could be defined from a top-down
+point of view. It shows that, according to Figure~\ref{fig:flow}, both type
 specifiers are processed independently, split into two kingdoms (literal and
 numeric types) and unified in an \code{(and U (not V))} fashion. The
 expert sub-procedures, \code{null-literal-type-p} and \code{null-numeric-type-p},
@@ -530,21 +530,21 @@ that:
     Actually this is not completely accurate since the type \footcode{string}
     can be described using array type specifiers. However, since the latter are
     not supported by our implementation yet, we consider the types
-    \footcode{string} and \footcode{bit-vector} being literal types since their
+    \footcode{string} and \footcode{bit-vector} as being literal types since their
     symbolic representation is kept through the entire process. This is very
     likely to change in the future.
   }, and,
 \item the numeric type kingdom is the type described by \code{number}\footnote{%
     Our implementation does not support complex numbers yet, and considers the
-    \footcode{complex} type being empty. Some wrong results arise from that
+    \footcode{complex} type as being empty. Some wrong results arise from that
     supposition---such as \footcode{(subtypep 'number 'real)} returning true.
     This will change as soon as complex numbers are supported.
   }.
 \end{itemize}
 
 There are several properties that are derived from the preceding pre-processing
-steps. First of all, both kingdoms' procedures are guaranteed to receive as
-argument \emph{canonical} type specifiers only. These are also guaranteed to never
+steps. First of all, both kingdoms' procedures are guaranteed to only ever
+receive argument \emph{canonical} type specifiers. These are also guaranteed to never
 contain \code{atom} or \code{t} type specifiers. The occurrences of \code{(and)}
 and \code{(or)} have been replaced respectively by \code{t} and \code{nil}.
 \code{eql} type specifiers have been replaced by equivalent \code{member} expressions.
@@ -556,10 +556,10 @@ means the empty type which complement is \code{t} whereas for numeric types it
 represent the empty range whose complement is \code{(number * *)}.
 
 In the following sections we describe in detail the implementation of the expert
-sub-procedures for the literal (Section \ref{sec:explit}) and numeric
-(Section \ref{sec:expnum}) type kingdoms. We also briefly discuss
-the array type kingdom and the \code{cons} type specifier family,
-which Baker ignores in his article, in Section \ref{sec:expoth}.
+sub-procedures for the literal (Section~\ref{sec:explit}) and numeric
+(Section~\ref{sec:expnum}) type kingdoms. We also briefly discuss in
+Section~\ref{sec:expoth} the array type kingdom and the \code{cons} type
+specifier family, which Baker ignores in his article.
 
 \begin{listing}
 \begin{clcode}
@@ -586,7 +586,7 @@ top-level type \code{t}. We associate to each pair $\left(u_i, e_j\right)$ the
 bit $b_{ij}$ with the value $1$ when $e_j \in u_i$ and $0$ when $e_j \notin u_i$.
 Let $bv_i$ be the \emph{representative bit-vector} associated to the type $u_i$,
 defined by $\left[b_{i0}, b_{i1}, \dots, b_{i\omega}\right]$. These
-bit-vectors are the rows of the infinite matrix on Eq. \ref{eq:matrix} which
+bit-vectors are the rows of the infinite matrix on Eq.~\ref{eq:matrix} which
 illustrates the system.
 
 \[
@@ -602,7 +602,7 @@ illustrates the system.
 
 \begin{proof}
   \emph{\small Each type has a unique bit-vector representation.}
-  \newcommand{\reldiff}[2]{#1 \cup #2 \backslash #1 \cap #2}
+  \newcommand{\reldiff}[2]{(#1 \cup #2) \backslash (#1 \cap #2)}
 
   Let $u_i$ and $u_j$ be two distinct types. Thus, $\reldiff{u_i}{u_j} \neq \emptyset$.
   Let $e_k \in \reldiff{u_i}{u_j}$. By definition, we have $b_{ik} \neq b_{jk}$.
@@ -643,7 +643,7 @@ illustrates the system.
 \subsubsection{Implementation}
 Common Lisp cannot enumerate all the possible subtypes of \code{t} nor all of
 its elements. Fortunately, we do not need them all. We only need to consider the
-types present in the input type specifier to determine its emptiness.
+types mentioned in the input type specifier to determine its emptiness.
 
 We also do \emph{not need to enumerate all the elements of these types}.
 It is that aspect of the procedure of Baker that makes it both powerful and
@@ -753,7 +753,7 @@ becoming a valid type specifier recognizable by \code{typep}.'' Thus,
 \code{subtypep} is not concerned by these types of structures.
 
 To address the misrepresentation problem when \code{member} type specifiers are
-involved, as discussed in Section \ref{sec:issues}, we must ensure that a new
+involved, as discussed in Section~\ref{sec:issues}, we must ensure that a new
 representative element is generated and registered. The Common Lisp
 standard (\cite{bib:ansi.94.cl}) states that the \code{member} type specifier is
 defined in terms of \code{eql}. That is, \code{(typep $e$ '(member $e_1$
@@ -767,11 +767,11 @@ top-level type \code{t}: \code{t} = \code{(or string list symbol)}. Then, let
 $R$ = \code{("hello" (1 2 3) foo)} be our list of representatives.
 \begin{enumerate}
 \item Let's ask the question \code{(subtypep 'symbol '(member foo))}.
-\item As discussed in Section \ref{sec:issues}, we add the elements of the
+\item As discussed in Section~\ref{sec:issues}, we add the elements of the
   \code{member} expression to $R$. To conform with the specification, we first
   check whether or not \code{foo} is already in $R$ \code{eql}-wise:
   $\mcode{foo} \in_{\mcode[\scriptsize]{eql}} R$, so $R$ does not change.
-\item As shown in Eq. \ref{eq:symbol}, the emptiness check passes, meaning that
+\item As shown in Eq.~\ref{eq:symbol}, the emptiness check passes, meaning that
   \code{symbol} is indeed a subtype of \code{(member foo)}, which is obviously
   wrong.
   \begin{align}
@@ -788,7 +788,7 @@ comparison.
 \item \code{(subtypep 'list '(member (1 2 3)))}
 \item $\mcode{(1 2 3)} \not\in_{\mcode[\scriptsize]{eql}} R \Rightarrow R =
   \mcode{("hello" (1 2 3) foo (1 2 3))}$
-\item As shown in Eq. \ref{eq:list}, the emptiness check fails and the answer is
+\item As shown in Eq.~\ref{eq:list}, the emptiness check fails and the answer is
   correct.
   \begin{align}
     B(\mcode{list}) \wedge \neg B(\mcode{(member (1 2 3))}) &= 0101 \wedge \neg 0001 \label{eq:list}\\
@@ -804,7 +804,9 @@ of \code{subtypep}---are then \code{symbol} and \code{character}.
 Therefore, only the representatives of these types need to be actually checked
 when registering \code{member}'s elements.
 
-To generate a new symbol, we use \code{alexandria:symbolicate}.
+To generate a new symbol, we use \code{alexandria:symbolicate}\footnote{%
+  \url{https://common-lisp.net/project/alexandria/}
+}.
 The \code{keyword} subtype of \code{symbol} is also subject to the problem.
 (Actually, solving the problem for keywords also solves the problem for
 symbols.)
@@ -841,8 +843,8 @@ following sections.
 This algorithm suffers from an exponential time and space complexity. However,
 Baker claims that in practice, that theoretical complexity is not an issue (it
 only appears for ``highly artifical cases''). We have not tried to prove (or
-invalidate) his statement but Section \ref{sec:res} shows some early results
-that tend to prove him right.
+invalidate) his statement but Section~\ref{sec:res} shows some early results
+that tend to support his claim.
 
 We use a custom abstraction, the \code{interval} class, closer to the
 mathematical object (with type, bounds and limits slots). Thus we avoid the
@@ -853,7 +855,7 @@ The first step is to write a function \code{range->interval} that converts
 forms---such as \code{(unsigned-byte $s$)} which describes the \code{integer}
 range $\left[0; 2^s-1\right]$. We also use a similar structure for interval
 operations to fully discard the list representation. One could define the
-\code{interval} class as shown in the Listing \ref{lst:interval}.
+\code{interval} class as shown in the Listing~\ref{lst:interval}.
 
 We also need the following \code{interval} functions:
 \begin{itemize}
@@ -903,11 +905,11 @@ their implementation greatly simplified.
 To convert each numeric type into its equivalent using only the six types above,
 a two-step conversion is required.
 \begin{enumerate}
-\item For intervals which \code{type} is a \emph{supertype} of one of these
+\item For intervals whose \code{type} is a \emph{supertype} of one of these
   types, the conversion table~\ref{tab:numequiv} is used. E.g.: the conversion
   of \code{(rational $a$ $b$)} gives \code{(or (integer $a$ $b$) (ratio $a$
     $b$))}.
-\item For intervals which \code{type} is a \emph{bounded subtype} (i.e.: having
+\item For intervals whose \code{type} is a \emph{bounded subtype} (i.e.: having
   defined bounds, not infinity) of these six types, their actual bounds have to
   be constrained to fit within the bounds of their type, before being converted
   to their corresponding supertype. For example, \code{(fixnum $12$ $2^{100}$)},
@@ -953,9 +955,9 @@ Section~\ref{sec:tdred}, intervals with different types are necessarily
 disjoint. \emph{Touching intervals} \cite{baker1992} are \emph{merged} using
 \code{interval-or}.
 
-$\Gamma(\emptyset)$ and $\Gamma(I)$ are straightforward, as shown in Eq.
-\ref{eq:gammavoid} and Eq. \ref{eq:gammaI}. These are the terminal cases of the
-recursion of $\Gamma$.
+$\Gamma(\emptyset)$ and $\Gamma(I)$ are straightforward, as shown in
+Eq.~\ref{eq:gammavoid} and Eq.~\ref{eq:gammaI}. These are the terminal cases of
+the recursion of $\Gamma$.
 
 \begin{align}
   \Gamma(\emptyset) &= \emptyset \label{eq:gammavoid}\tag{end-$\emptyset$}\\
@@ -963,20 +965,20 @@ recursion of $\Gamma$.
 \end{align}
 
 Intersections (\code{and} logical type specifiers) are reduced as soon as they
-are encountered. Their operands needs to be processed by $\Gamma$ first (hence
-the implicit mapping ``$k \rightarrow n$''). Eq. \ref{eq:andapply} shows how to
+are encountered. Their operands need to be processed by $\Gamma$ first (hence
+the implicit mapping ``$k \rightarrow n$''). Eq.~\ref{eq:andapply} shows how to
 reduce intersections. The $\varPhi_f$ operator denotes a \emph{fold}
 \cite{Hutton1999fold} operation using the function $f$. $\Gamma \circ \cap$
 denotes the composition of the $\Gamma$ function and the intersection operator.
 To break it down in a bottom-up fashion:
 \begin{enumerate}
-\item Eq. \ref{eq:andfin} --- the application of the intersection function.
-\item Eq. \ref{eq:anddist2} --- the distribution of the intersection in the union.
-  Next step is Eq. \ref{eq:andfin}.
-\item Eq. \ref{eq:anddist1} --- also the distribution of the intersection in the
+\item Eq.~\ref{eq:andfin} --- the application of the intersection function.
+\item Eq.~\ref{eq:anddist2} --- the distribution of the intersection in the union.
+  Next step is Eq.~\ref{eq:andfin}.
+\item Eq.~\ref{eq:anddist1} --- also the distribution of the intersection in the
   union. However, $\Gamma(\chi)$ may return an union, leading the execution
-  either to Eq. \ref{eq:anddist2} or directly to Eq. \ref{eq:andfin}.
-\item Eq. \ref{eq:andapply} --- the canonicalization of the $\chi_n$ forms using
+  either to Eq.~\ref{eq:anddist2} or directly to Eq.~\ref{eq:andfin}.
+\item Eq.~\ref{eq:andapply} --- the canonicalization of the $\chi_n$ forms using
   mapping. The results are then folded using $\Gamma \circ \cap$, thus
   initiating the recursive intersection distribution.
   % Note that a possible
@@ -987,17 +989,17 @@ To break it down in a bottom-up fashion:
 \begin{align}
   \Gamma\left(\bigcap_n \chi_n\right) &= \varPhi_{\Gamma \circ \cap}\, \Gamma(\chi_k)_{k \rightarrow n} \label{eq:andapply}\tag{\code{and}-apply}\\
   \Gamma\left(\chi \cap \bigcup_n I_n\right) &= \bigcup_n \Gamma\left(\Gamma(\chi) \cap I_n\right) \label{eq:anddist1}\tag{\code{and}-distribution}\\
-  \Gamma\left(\bigcup_n I_n \cap I\right) &= \bigcup_n \Gamma(I_n \cap I) \label{eq:anddist2}\tag{\code{and}-distribution'}\\
+  \Gamma\left(\bigcup_n I_n \cap I\right) &= \bigcup_n \Gamma(I_n \cap I) \label{eq:anddist2}\tag{\code{and}-distribution$'$}\\
   \Gamma(I_1 \cap I_2) &= \mcode{(interval-and $I_1$ $I_2$)} \label{eq:andfin}\tag{\code{and}-final}
 \end{align}
 
 Complements (\code{not} logical type specifiers) are also reduced as soon as
 they are encountered. Their only operand is first canonicalized. Complementing
 $U$ in \code{number} (the top-level type of the range type kingdom) is
-equivalent to the difference $\mcode{number} - U$, as shown in Eq.
-\ref{eq:notapply}. The difference canonicalization goes through a similar
-recursive distribution path than the intersection, that is Eq.
-\ref{eq:minusdist} and then Eq. \ref{eq:minusapply}. Note that this path is
+equivalent to the difference $\mcode{number} - U$, as shown in
+Eq.~\ref{eq:notapply}. The difference canonicalization goes through a similar
+recursive distribution path than the intersection, that is
+Eq.~\ref{eq:minusdist} and then Eq.~\ref{eq:minusapply}. Note that this path is
 taken every time since the interval difference is an internal operation and that
 its left-hand operand is always $\mathcal{U}$.
 
@@ -1098,7 +1100,7 @@ specifier also needs to be studied.
     \sample{a2bak} & Algo 2 with \code{baker:subtypep}\\
     \hline
   \end{tabular}
-  \caption{Legend of figures \ref{fig:bad}, \ref{fig:perfmember} and \ref{fig:good}}
+  \caption{Legend of figures~\ref{fig:bad},~\ref{fig:perfmember} and~\ref{fig:good}}
   \label{tab:legend}
 \end{table}
 \begin{tabular}{|cl|}
@@ -1112,10 +1114,10 @@ These results are only presented here as complementary information.
 Table~\ref{tab:legend} shows the legend of the figures in this section.
 
 As expected, our implementation is often slower, but not dramatically, which is
-encouraging. Figure \ref{fig:bad} shows that our implementation is overall
+encouraging. Figure~\ref{fig:bad} shows that our implementation is overall
 slower in the range type kingdom.
 
-Figure \ref{fig:perfmember} shows that heavy users of \code{member} seems to
+Figure~\ref{fig:perfmember} shows that heavy users of \code{member} seems to
 experience a slower execution. Perhaps, as predicted by Baker, the reason is
 that the systematic registration of the elements makes the size of the
 bit-vectors grow quickly, thus making every subsequent operation slower.
