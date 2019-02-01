@@ -1094,10 +1094,10 @@ specifier also needs to be studied.
   \definecolor{a2bak}{RGB}{79,198,1}
   \begin{tabular}{|cl|}
     \hline
-    \sample{a1cl} & Algo 1 with \code{cl:subtypep}\\
-    \sample{a1bak} & Algo 1 with \code{baker:subtypep}\\
-    \sample{a2cl} & Algo 2 with \code{cl:subtypep}\\
-    \sample{a2bak} & Algo 2 with \code{baker:subtypep}\\
+    \sample{a1cl} & Algorithm 1 with \code{cl:subtypep}\\
+    \sample{a1bak} & Algorithm 1 with \code{baker:subtypep}\\
+    \sample{a2cl} & Algorithm 2 with \code{cl:subtypep}\\
+    \sample{a2bak} & Algorithm 2 with \code{baker:subtypep}\\
     \hline
   \end{tabular}
   \caption{Legend of figures~\ref{fig:bad},~\ref{fig:perfmember} and~\ref{fig:good}}
@@ -1112,6 +1112,9 @@ has compared in \cite{newton.18.phd} the performances of several \code{subtypep}
 highly dependent algorithms, both using the implementation of \sbcl{} and ours.
 These results are only presented here as complementary information.
 Table~\ref{tab:legend} shows the legend of the figures in this section.
+
+The $X$ axis is the size of the type specifiers and the $Y$ axis is the
+execution time. Hence, the lower a curve is, the better.
 
 As expected, our implementation is often slower, but not dramatically, which is
 encouraging. Figure~\ref{fig:bad} shows that our implementation is overall
