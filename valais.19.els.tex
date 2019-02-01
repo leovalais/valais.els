@@ -302,12 +302,12 @@ be detailed in the following sections. There are three \emph{major stages}:
   redirected to the appropriate expert sub-procedure. The job of such a procedure is to
   \emph{prove}, in its own kingdom, the assertion ``$A$ is a subtype of $B$'' to
   be \emph{wrong}.
-  Our procedures currently only supports literal and range type specifiers---an
+  Our procedures currently only support literal and range type specifiers---an
   expert sub-procedure has been implemented only for these two kingdoms. This
   stage is detailed in Section \ref{sec:exp}.
 \item \emph{Result conjunction} --- Eventually, all expert sub-procedures
   return (a Boolean) and the results are accumulated using conjunction.
-  (In practice, as soon as one expert procedure return false, \code{subtypep}
+  (In practice, as soon as one expert procedure returns false, \code{subtypep}
   returns.)
 \end{enumerate}
 
