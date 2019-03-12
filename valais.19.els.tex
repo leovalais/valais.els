@@ -131,7 +131,7 @@ given two arbitrary predicates \code{F} and \code{G}, there is no way
 
 However, some implementations abuse the permission to return \code{(nil nil)}.
 For example, in \sbcl{} 1.4.10 (the implementation we are currently focusing our
-efforts on), {\small\code{(satisfies 'boolean 'keyword)}} returns
+efforts on), {\small\code{(subtypep 'boolean 'keyword)}} returns
 \code{(nil nil)}, thus violating the standard\footnote{The Common Lisp standard
   requires that no invocation of \footcode{subtypep} involving only primitive types
   return \footcode{(nil nil)}.}. The definition of the \code{keyword} type is
@@ -173,8 +173,7 @@ accuracy and even about efficiency.
 \section{The Common Lisp type system}
 \label{sec:cltypes}
 \subsection{Type specifiers}
-Common Lisp types are not manipulated directly as they are in other languages
-such as C++. Instead, the type to be
+Common Lisp types are not manipulated directly. Instead, the type to be
 manipulated is \emph{described} using a \emph{type specifier}.
 The type specifier Domain-Specific Language (DSL) allows programmers to
 describe types by writing S-expressions which obey some rules described in the
@@ -215,12 +214,6 @@ alias. Listing~\ref{lst:deftype} shows an example of parametric
   \item[kingdom] In Baker's terminology, a ``type kingdom'' designates the types
     that can be described using \emph{only one kind of type specifier}.
     \code{nil} (the empty type) belongs to every type kingdom.
-  % \item[interval] A mathematical interval that may not be a valid type specifier.
-  % \item[type $\approx$ t.s.] When unambiguous, we write type specifiers where a
-  %   mathematical type is expected and to use a type variable, say $U$, as a
-  %   placeholder inside Lisp code for \emph{a type specifier describing} $U$.
-  % \item[$U \subseteq U'$] The type $U$ is a non-strict subtype of $U'$.
-  %   We always have \code{(subtypep $U$ $U'$)}.
 \end{description}
 
 In this article we focus on two particular type kingdoms:
@@ -230,6 +223,12 @@ In this article we focus on two particular type kingdoms:
 \item the \emph{range type kingdom}, represented only using
   range and logical type specifiers
 \end{itemize}
+
+For example, \code{(or string symbol)} belongs to the literal type kingdom.
+\code{(and number (not real))} belongs to the range type kingdom. However,
+\code{(or symbol integer)} belongs to the literal type kingdom while
+\code{(or symbol (integer * *))} belongs to both. This situation is handled in
+section \ref{sec:pre}.
 
 There are other type kingdoms that Baker mentions in his article, such as the
 \emph{array} type kingdom, represented using only \code{array} and logical type
@@ -321,14 +320,12 @@ alias to expand again.
   \centering
   \newcommand\profgraph[1]{\includegraphics[scale=.42,trim={1mm 1mm 4mm 5mm},clip]{#1}}
   \profgraph{assets/19/stGTstp}
-  % \profgraph{assets/19/stEQstp}
   \caption{\code{specifier-type} weight in \code{cl:subtypep}
     execution\textsuperscript{\it a}}
   \footnotesize\textsuperscript{\it a}~\footcode{cached-subtypep-caching-call} is just a memoizing wrapper
   around \sbcl's \footcode{subtypep} which is a bit more efficient than the raw
   implementation.
   \label{fig:specifiertype}
-  % \label{fig:stGTstp}
 \end{figure}
 
 
@@ -430,16 +427,6 @@ with every non-range inner type specifier replaced by \code{nil} (interpreted
 this time as the \textit{empty range}). Thus, the result is a subtype of \code{number}.
 Therefore, \code{split} can easily be implemented in terms of
 \code{type-keep-if}.% , as shown in Listing~\ref{lst:split}.
-
-% \begin{listing}
-% \begin{clcode}
-% (defun split (type)
-%   (list (type-keep-if #'literal-type-p type)
-%         (type-keep-if #'range-type-p type)))
-% \end{clcode}
-% \caption{The \code{split} function}
-% \label{lst:split}
-% \end{listing}
 
 \subsection{Type reformulation}
 For any types $U$ and $V$,
@@ -800,8 +787,6 @@ The first step is to write a function \code{range->interval} that converts
 forms---such as \code{(unsigned-byte $s$)} which describes the \code{integer}
 range $\left[0; 2^s-1\right]$. We also use a similar structure for interval
 operations to fully discard the list representation.
-% One could define the \code{interval} class as shown in the
-% Listing~\ref{lst:interval}.
 
 We also need the following \code{interval} functions:
 \begin{itemize}
@@ -814,19 +799,6 @@ We also need the following \code{interval} functions:
   or $I_1$ otherwise.
 \item \code{(interval-empty-p $I$)} --- returns whether $I = \emptyset$.
 \end{itemize}
-
-% \begin{listing}
-% \begin{clcode}
-% (defstruct interval
-%   (type (error "must specify a type") :type symbol)
-%   (low '* :type (or (eql *) real))
-%   (high '* :type (or (eql *) real))
-%   (lclose t :type boolean) ; whether or not low is included
-%   (rclose t :type boolean))
-% \end{clcode}
-% \caption{A possible implementation of the \code{interval} class}
-% \label{lst:interval}
-% \end{listing}
 
 \subsubsection{Type diversity reduction}
 \label{sec:tdred}
@@ -927,9 +899,6 @@ To break it down in a bottom-up fashion:
 \item Eq.~\ref{eq:andapply} --- the canonicalization of the $\chi_n$ forms using
   mapping. The results are then folded using $\Gamma \circ \cap$, thus
   initiating the recursive intersection distribution.
-  % Note that a possible
-  % optimization is to stop the folding as soon as $\emptyset$ is to be used as an
-  % intersection operand.
 \end{enumerate}
 
 \begin{align}
