@@ -335,14 +335,16 @@ As explained in Section~\ref{sec:flow}, after pre-processing both type
 specifiers, the procedure splits in two expert sub-procedures: one for literal
 type specifiers and one for range type specifiers.
 Numeric types---types containing numbers (mathematically speaking)---can have
-different representations: a \emph{symbol} (e.g., \code{fixnum}), a \emph{range}
-(e.g., \code{(integer 1 6)}) or a \emph{\code{member} expression}
-(e.g., \code{(member 1 2 3)}). However, the first two are literal where the
-latter is a range. Thus, the numerical type information would be distributed in
-the different expert sub-procedures. For consistency and accuracy, a single internal
-representation has to be chosen. The symbolic and \code{member} numeric types
-must each be converted into an equivalent type specifier, in which numerical
-data are only represented using ranges.
+different representations: a \emph{symbol} (e.g., \code{fixnum}), a
+\emph{\code{member} expression} (e.g., \code{(member 1 2 3)}) or a \emph{range}
+(e.g., \code{(integer 1 6)}). However, the first two belong to the literal type
+kingdom whereas the latter belongs to the range kingdom.
+Thus, the numerical type information would be distributed over the different
+expert sub-procedures. For consistency and accuracy, a single internal
+representation has to be chosen.
+The symbolic and \code{member} numeric types must each be converted into an
+equivalent type specifier, in which numerical data are only represented using
+ranges.
 
 \begin{itemize}
 \item \emph{Symbolic} numeric type specifier --- say \code{U}, replace it by
@@ -548,8 +550,9 @@ illustrates the system.
 \end{proof}
 
 \begin{proof}
-  \emph{\small Type intersection, union and complement are equivalent to Boolean
-    operations ``and'', ``or'' and ``not'' on representative bit-vectors.}
+  \emph{\small Type intersection, union and complement are equivalent to
+    bitwise Boolean operations ``and'', ``or'' and ``not'' on
+    representative bit-vectors.}
 
   Let two types $u_i$ and $u_j$ in:
   \begin{enumerate}
@@ -891,9 +894,9 @@ denotes the composition of the $\Gamma$ function and the intersection operator.
 To break it down in a bottom-up fashion:
 \begin{enumerate}
 \item Eq.~\ref{eq:andfin} --- the application of the intersection function.
-\item Eq.~\ref{eq:anddist2} --- the distribution of the intersection in the union.
+\item Eq.~\ref{eq:anddist2} --- the distribution of the intersection over the union.
   Next step is Eq.~\ref{eq:andfin}.
-\item Eq.~\ref{eq:anddist1} --- also the distribution of the intersection in the
+\item Eq.~\ref{eq:anddist1} --- also the distribution of the intersection over the
   union. However, $\Gamma(\chi)$ may return an union, leading the execution
   either to Eq.~\ref{eq:anddist2} or directly to Eq.~\ref{eq:andfin}.
 \item Eq.~\ref{eq:andapply} --- the canonicalization of the $\chi_n$ forms using
@@ -940,14 +943,14 @@ nor implementation guidelines are provided here. It does, however, give some
 insights about how Baker procedure applies to modern Common Lisp implementations
 such as \sbcl.
 
-Array type specifiers are complex to handle because it is bi-dimensional: it
+Array type specifiers are complex to handle because they are bi-dimensional: it
 has an element type and bounds (e.g., \code{(array integer (* 2 *))}).
 Internally, Common Lisp implementations do not store which exact type
 specifier is specified but rather only store the result of the function
 \code{upgraded-array-element-type} returns giving that type. E.g, for
 \code{(make-array 2 :element-type 'list)}, the implementation does not makes an
 array of \code{list} but rather an array of \code{(upgraded-array-element-type
-  'list)} = \code{T}. For every value that might return this function, Baker
+  'list)}. For every value that might return this function, Baker
 requires that we store a bit matrix (instead of bit vectors) because of the
 complex bounds logic of the type specifier. As for the literal type procedure,
 it seems to be an efficient type representation system---albeit more
