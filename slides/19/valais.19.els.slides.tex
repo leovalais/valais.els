@@ -1,0 +1,552 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{minted}
+\usepackage{appendixnumberbeamer}
+\usepackage{hyperref}
+\usepackage{macosbox}
+\usepackage{codebox}
+\usepackage{apple_emoji}
+\usepackage[normalem]{ulem}
+% \usepackage[texcoord,grid,gridunit=mm,gridcolor=red!20,subgridcolor=gray!10]{eso-pic}
+
+\usemintedstyle{colorful}
+\usecodeboxmintedstyle{zenburn}
+\newminted{cl}{autogobble,breaklines,escapeinside=||}
+\setmintedcodebox{clcode}{title=Common Lisp,icon=\(\mathbf{\lambda}\),compact}
+
+\usetheme{avalon}
+\def\avalonprogressbar{1}
+\def\avalondarkmintedstyle{monokai}%{zenburn}
+
+\title{Implementing Baker's \texttt{SUBTYPEP} decision procedure\vspace*{-5mm}}
+% \subtitle{European Lisp Symposium}
+\date{April 1st, 2019}
+\author{Léo Valais}
+\institute{European Lisp Symposium}
+
+\titlegraphic{\includegraphics[scale=.2]{lrde_epita.png}}
+
+\renewcommand\code[1]{\texttt{#1}}
+\newcommand\rarr{\ensuremath{\rightarrow}}
+\newcommand\Rarr{\ensuremath{\Rightarrow}}
+\newcommand\plholder[1]{\ensuremath{\langle {#1} \rangle}}
+\newcommand\emoji[2][\tiny]{{#1#2}}
+\newcommand\plus{{\color{watchOS-blue}\faPlus}}
+\newcommand\minus{{\color{watchOS-red}\faMinus}}
+\newcommand\good{{\color{watchOS-green}\faCheck}}
+\newcommand\bad{{\color{watchOS-red}\faClose}}
+\newcommand\tgood{{\color{watchOS-purple}\faThumbsOUp}}
+\newcommand\tbad{{\color{watchOS-red}\faThumbsODown}}
+
+\begin{document}
+
+\begin{frame}
+\titlepage{}
+\end{frame}
+
+\begin{frame}
+  \frametitle{TOC}
+  \tableofcontents
+\end{frame}
+
+\section{The Common Lisp type system}
+
+\newenvironment{sectionframe}[1]{%
+  \begin{frame}[standout]
+    \centering
+    \Huge
+    {\bf #1}
+
+    {\usebeamercolor[bg]{secondary color}\noindent\sout{\hfill}}
+    \bigskip
+
+    \large
+  }{\end{frame}}
+
+\begin{sectionframe}{Introduction}
+  Common Lisp type system, \code{subtypep} \\\& Baker's decision procedure
+\end{sectionframe}
+
+\begin{frame}
+  \frametitle{The Common Lisp type system}
+  \begin{itemize}
+  \item Types \rarr{} sets, subtypes \rarr{} subsets
+  \item S-expression based, inductive Domain-Specific Language \rarr{} \emph{type specifiers}
+  \item Examples
+    \begin{itemize}
+    \item Atomic \rarr{} \code{string}, \code{integer}, \code{my-class}, \dots
+    \item Compound form
+      \begin{itemize}
+      \item \code{(or string number)} $\equiv \code{string} \cup \code{number}$
+      \item \code{(unsigned-byte 10)} $\equiv \{0, 1, \cdots, 2^{10} - 1\}$
+      \item \code{(array real (3 3))} $\equiv \mathcal M_{3,3}(\mathbb R)$
+      \item Many more!
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Use case}
+  \begin{columns}
+    \column{0pt}
+    \column{.6\paperwidth}
+    \[
+      \forall M \in \mathcal M_{3,3}(\mathbb R), tr(M) = \sum_{i=1}^3 M_{i,j}
+    \]
+\begin{clcode}
+(defun tr (M)
+  (declare (type (array real (3 3)) M))
+  (+ (aref M 0 0)
+     (aref M 1 1)
+     (aref M 2 2)))
+\end{clcode}
+
+    \column<2>{.3\paperwidth}
+    \begin{itemize}
+    \item Type checking
+    \item Value checking
+    \item Compiler optimization
+    \item Documentation
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\section{\code{subtypep}}
+\subsection{Problems}
+
+\begin{frame}[fragile]
+  \frametitle{What about subtyping?}
+  \begin{itemize}
+  \item \code{(subtypep \plholder A \plholder B)} $\equiv A \subseteq B?$
+  \item Predicate function
+  \end{itemize}
+
+  \medskip
+
+  \begin{overprint}[\textwidth]
+    \onslide<2>
+    \begin{mintedcodebox}[title=Quite easy,compact,icon=\(\lambda\)]
+\begin{minted}{cl}
+(subtypep '(and integer
+                (not float))
+          '(or number string))
+\end{minted}
+    \end{mintedcodebox}
+
+    \onslide<3>
+    \begin{mintedcodebox}[title=Not that easy after all\dots,compact,icon=\(\lambda\)]
+\begin{minted}{cl}
+(subtypep '(or my-class string (integer 0 (1024)))
+          '(or super-class
+               (array * 1)
+               (unsigned-byte 10)))
+\end{minted}
+    \end{mintedcodebox}
+
+    \onslide<4->
+    \begin{mintedcodebox}[title=\textnormal{\it ``Oh dear, we are in trouble''
+        \emoji{😢}},compact,icon=\(\lambda\)]
+\begin{minted}{cl}
+(subtypep '(or string
+               my-class
+               (and integer
+                    (not (unsigned-byte 10)))
+               (member 3.14 2.71))
+          '(and (array * (* * 8 *))
+                bit-vector
+                (not (eql :some-keyword))))
+\end{minted}
+    \end{mintedcodebox}
+  \end{overprint}
+
+  \begin{popup}{.75}
+    \onslide<5>
+    \begin{macosbox}{}
+      \begin{itemize}
+      \item Type specifiers arbitrarily deep
+      \item May take a while to answer\dots
+      \end{itemize}
+
+      \begin{alertblock}{Problem \#1 --- complex input}
+        Arbitrarily complex input type specifiers
+      \end{alertblock}
+    \end{macosbox}
+  \end{popup}
+\end{frame}
+
+\begin{frame}
+  \frametitle{\code{satisfies} type specifier}
+  \begin{itemize}
+  \item \code{(satisfies \plholder{predicate})} $\equiv \left\{x \mid
+      predicate(x)\right\}$
+  \item \code{(satisfies oddp)} \rarr{} all odd numbers
+    \pause
+  \item \code{(subtypep '(satisfies oddp) '(satisfies evenp))}
+    \pause
+  \item \alert{\code{(subtypep '(satisfies \plholder F) '(satisfies
+        \plholder G))}}
+    \begin{itemize}
+    \item arbitrary predicates $F$ and $G$
+    \end{itemize}
+  \item  halting problem \rarr{} \code{subtypep} \emph{cannot} even answer
+    \emoji{😱}
+  \end{itemize}
+
+  \pause
+  \begin{alertblock}{Problem \#2 --- undecidability}
+    \code{Subtypep} cannot answer for some type specifiers
+  \end{alertblock}
+\end{frame}
+
+\subsection{Definition}
+
+\begin{frame}
+  \frametitle{\code{subtypep}}
+  \[
+    \code{(subtypep \plholder{A} \plholder{B})} =
+    \begin{cases}
+      \code{(T T)} &\rarr{} A \subseteq B \\
+      \code{(NIL T)} &\rarr{} A \not\subseteq B \\
+      \code{(NIL NIL)} &\rarr{} \text{\alt<1>{``I can't answer''}{%
+          \alert<2>{``I give up, sorry \emoji{🤕}''}}}
+    \end{cases}
+  \]
+
+  \begin{itemize}
+  \item<1-> \code{(NIL NIL)} encodes \alt<1>{undecidability}
+    {\sout{undecidability}\alert<2>{``input too complex''}}
+  \item<3> Lack of reliability
+  \item<3> Painful limit for some applications
+    \begin{itemize}
+    \item Newton's regular type expressions
+    \item Newton's optimized \code{typecase} implementation
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\section{Baker's decision procedure}
+\subsection{Presentation}
+
+\begin{frame}
+  \frametitle{Baker's decision procedure}
+  \setbeamercovered{highly dynamic}
+  \begin{columns}
+    \column{.45\paperwidth}
+    \begin{itemize}
+    \item[\plus] focus on result accuracy
+    \item[\plus] \emph{never} returns \code{(NIL NIL)} uselessly
+      \pause
+    \item[\minus] paper difficult to read
+    \item[\minus] not exhaustive
+    \item[\minus] very few solutions about \code{satisfies}
+    \end{itemize}
+
+    \pause
+    \column{.45\paperwidth}
+    \begin{itemize}
+    \item[\plus] efficiency% \rarr{} comparable to ``existing'' implementations
+    \item[\minus] \emph{not} open source
+      \pause
+    \item[\plus] Divide and Conquer
+    \item[\minus] exponential complexity (theoretical)
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{sectionframe}{Application}
+  % Step by step application for some simple example
+  Step by step execution of \code{subtypep}
+\end{sectionframe}
+
+\begin{frame}[fragile]
+  \frametitle{The problem}
+  \begin{itemize}
+  \item Serialize CLOS instances \rarr{} JSON
+  \item Automatic JSON object construction
+  \end{itemize}
+
+  \begin{columns}
+    \column{.55\paperwidth}
+\begin{clcode}
+(defclass point ()
+  ((x :type number
+      :initarg :x)
+   (y :type number
+      :initarg :y)
+   (name :type string
+         :initarg :name))
+  (:metaclass json-serializable))
+
+(json-serialize (make-instance 'point :x -10 :y 3.2 :name "A1"))
+\end{clcode}
+
+    \pause
+
+    \column{.4\paperwidth}
+  \begin{mintedcodebox}[title=JSON serialization,icon=\faOpera,compact]
+\begin{minted}{json}
+{
+  "X": -10,
+  "Y": 3.2,
+  "NAME": "A1"
+}
+\end{minted}
+  \end{mintedcodebox}
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{CLOS setup}
+\begin{clcode}
+(defclass json-serializable (standard-class)
+  ())
+
+(defmethod validate-superclass
+    ((class json-serializable) (superclass standard-class))
+  t)
+(defmethod validate-superclass
+    ((class standard-class) (superclass json-serializable))
+  t)
+
+(defgeneric json-serialize (instance))
+\end{clcode}
+
+  \pause
+  \begin{itemize}
+  \item No restriction on subclassing
+  \item But restrictions on existence!
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\code{json-serializable} existence condition}
+  \begin{columns}
+    \column{.5\textwidth}
+    \begin{itemize}
+    \item Slots
+      \begin{itemize}
+      \item[\tgood] names \rarr{} symbols
+      \item[\tbad] values \rarr{} virtually \emph{any type}
+      \end{itemize}
+    \item<3-> Types of slots \rarr{} $u_1, u_2, \dots, u_n$
+      \begin{itemize}
+      \item $u_i \subseteq \code{json}$
+      \item[\Rarr{}] \code{(subtypep $u_i$ 'json)}
+      \end{itemize}
+    \item<3-> Trigger compile-time error
+  \end{itemize}
+
+    \column<2->{.5\textwidth}
+\begin{clcode}
+(deftype json ()
+  '(or number
+       string
+       (member :true
+               :false
+               :null)
+       (and symbol
+            (not keyword))
+       list
+       hash-table))
+\end{clcode}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\code{json-serializable} existence check}
+\begin{clcode}
+;; FIXME
+(defun json-compatible-class-p (class)
+  (let* ((slots (class-slots class))
+         (types (mapcar #'slot-definition-type slots)))
+    (every (lambda (slot-type)
+             (subtypep slot-type 'json))
+           types)))
+
+(defmethod initialize-instance ((class json-serializable)
+                                &rest args)
+  (unless (json-compatible-class-p class)
+    (error "class ~a is not JSON-compatible" class))
+  (implement-json-serialize-method-for-class class)
+  (call-next-method))
+\end{clcode}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\code{employee} class}
+\begin{clcode}
+(deftype position-type () '(member :ceo :dev :sales))
+
+(defclass employee ()
+  ((name :type (or string
+                   (and symbol
+                        (not keyword))
+                   unsigned-byte))
+   (position :type position-type)
+   (previous-position :type (and position-type
+                                 (not (eql :ceo)))))
+  (:metaclass json-serializable))
+\end{clcode}
+
+  \pause
+  \begin{itemize}
+  \item 3 \code{subtypep} calls \rarr{} one per slot
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{First \code{subtypep} call \rarr{} \code{employee.name}}
+  \begin{columns}
+    \column{.60\textwidth}
+  \begin{mintedcodebox}[title=\code{name}'s type verification,icon=\(\lambda\),compact]
+    \begin{overprint}
+      \onslide<1>
+\begin{minted}{cl}
+(subtypep '(or string
+               (and symbol
+                    (not keyword))
+               unsigned-byte)
+          'json)
+\end{minted}
+
+      \onslide<2->
+\begin{minted}{cl}
+(subtypep '(or string
+               (and symbol
+                    (not keyword))
+               unsigned-byte)
+          '(or number
+               string
+               (member :true
+                       :false
+                       :null)
+               (and symbol
+                    (not keyword))
+               list
+               hash-table))
+\end{minted}
+    \end{overprint}
+  \end{mintedcodebox}
+
+    \column{.40\textwidth}
+    \begin{itemize}
+    \item<2-> alias expansion
+      \begin{itemize}
+      \item implementation dependant feature
+      \item \code{sb-ext:typexpand}
+      \end{itemize}
+    \item<3-> more preprocessing!
+      \begin{itemize}
+      \item syntactic sugar elimination
+      \item \alt<3>{numeric types specific actions}{\sout{numeric types specific
+            actions}}
+      \end{itemize}
+    \item<5-> splitting
+      \begin{itemize}
+      \item ``litteral'' types
+      \item ``numeric'' types
+      \end{itemize}
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Problem reformulation} % \emoji[\normalsize]{🔪}
+  \newminted[localcl]{cl}{fontsize=\scriptsize}
+
+  \begin{columns}
+    \column{.55\textwidth}
+    \begin{mintedcodebox}[title=Litteral types splitting,compact,icon=\faQuoteLeft]
+      \begin{overprint}
+        \onslide<1>
+\begin{localcl}
+(subtypep '(or string
+               (and symbol
+                    (not keyword))
+               unsigned-byte)
+          '(or number
+               string
+               (member :true
+                       :false
+                       :null)
+               (and symbol
+                    (not keyword))
+               list
+               hash-table))
+\end{localcl}
+
+        \onslide<2-3>
+\begin{localcl}
+(subtypep '(or string
+               (and symbol
+                    (not keyword))
+               NIL)
+          '(or NIL
+               string
+               (member :true
+                       :false
+                       :null)
+               (and symbol
+                    (not keyword))
+               list
+               hash-table))
+\end{localcl}
+      \end{overprint}
+    \end{mintedcodebox}
+
+    \column{.55\textwidth}
+    \begin{mintedcodebox}[title=Numeric types splitting,compact,icon=\faCalculator]
+      \begin{overprint}
+        \onslide<1-2>
+\begin{localcl}
+(subtypep '(or string
+               (and symbol
+                    (not keyword))
+               unsigned-byte)
+          '(or number
+               string
+               (member :true
+                       :false
+                       :null)
+               (and symbol
+                    (not keyword))
+               list
+               hash-table))
+\end{localcl}
+
+        \onslide<3>
+\begin{localcl}
+(subtypep '(or NIL
+               (and NIL
+                    (not NIL))
+               unsigned-byte)
+          '(or number
+               NIL
+               NIL
+               (and NIL
+                    (not NIL))
+               NIL
+               NIL))
+\end{localcl}
+      \end{overprint}
+    \end{mintedcodebox}
+  \end{columns}
+
+  \begin{popup}{.75}
+    \onslide<4->
+    \begin{macosbox}{Subtyping equivalence}
+      \begin{itemize}
+      \item $A \subseteq B \Leftrightarrow A \cap \overline B
+        = \emptyset$
+      \item {\small\code{(subtypep \plholder A \plholder B)} $\equiv$
+        \code{(subtypep '(and \plholder A (not \plholder B)) nil)}}
+      \end{itemize}
+    \end{macosbox}
+  \end{popup}
+\end{frame}
+
+\end{document}
