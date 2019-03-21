@@ -1024,4 +1024,63 @@
   CLOS classes, representation conflicts \& \code{null-numeric-type-p}
 \end{sectionframe}
 
+\begin{frame}
+  \frametitle{CLOS classes}
+  \setbeamercovered{highly dynamic}
+
+  \begin{itemize}
+  \item Issue \rarr{} find a representative instance
+  \item Cannot use \code{make-instance} \rarr{} possible side-effects
+    \pause
+  \item Baker's solution
+    \begin{itemize}
+    \item \emph{hook into \code{defclass}/\code{defstruct} implementation}
+    \item[\tiny\minus] not portable
+    \item[\tiny\minus] maybe not trivial
+    \end{itemize}
+  \end{itemize}
+
+  \pause
+
+  \begin{itemize}
+  \item Our solution \rarr{} the Meta Object Protocol
+    \begin{itemize}
+    \item \emph{register class prototypes \rarr{} ``fake'' instances}
+    \item[\tiny\plus] portable
+    \item[\tiny\plus] easier to implement
+    \item[\tiny\plus] packageable
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Representation conflicts}
+  TODO?
+\end{frame}
+
+\begin{frame}
+  \frametitle{\code{null-numeric-type-p}}
+  \begin{itemize}
+  \item Many representations of numerical data types
+  \item Range representation available \rarr{} \code{(integer (12) *)}
+  \item Exponential theoretical complexity
+    \begin{itemize}
+    \item acceptable in practice
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[standout]
+  \frametitle{Conclusion}
+  \begin{itemize}
+  \item A
+  \item B
+  \item \alt<2>{\sout{More efficient} April fools}{More efficient}
+  \end{itemize}
+\end{frame}
+
+\begin{sectionframe}{\it Thanks for listening! \emoji[\normalsize]{😃}}
+  \it Any question?
+\end{sectionframe}
+
 \end{document}
