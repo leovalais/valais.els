@@ -32,9 +32,11 @@
 (defmethod initialize-instance ((class json-serializable) &rest args)
   (declare (ignore args))
   (format t "~&yes")
-  (unless (json-compatible-class-p class)
-    (error "class ~a is not JSON-compatible" class))
-  (call-next-method))
+  (let ((cls (call-next-method)))
+    (closer-mop:ensure-finalized cls nil)
+    (unless (json-compatible-class-p class)
+      (error "class ~a is not JSON-compatible" class))
+    cls))
 
 (defclass point ()
   ((x :type number

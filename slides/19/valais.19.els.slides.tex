@@ -10,12 +10,17 @@
 \usepackage{codebox}
 \usepackage{apple_emoji}
 \usepackage[normalem]{ulem}
+\usepackage{forest}
 % \usepackage[texcoord,grid,gridunit=mm,gridcolor=red!20,subgridcolor=gray!10]{eso-pic}
 
 \usemintedstyle{colorful}
 \usecodeboxmintedstyle{zenburn}
 \newminted{cl}{autogobble,breaklines,escapeinside=||}
 \setmintedcodebox{clcode}{title=Common Lisp,icon=\(\mathbf{\lambda}\),compact}
+\newminted[smallclcode]{cl}{autogobble,breaklines,escapeinside=||,fontsize=\scriptsize}
+\setmintedcodebox{smallclcode}{title=Common Lisp,icon=\(\mathbf{\lambda}\),compact}
+\newminted[hlclcode]{cl}{autogobble,breaklines,escapeinside=||}
+\setmintedcodebox{hlclcode}{headless,compact}
 
 \usetheme{avalon}
 \def\avalonprogressbar{1}
@@ -45,11 +50,6 @@
 
 \begin{frame}
 \titlepage{}
-\end{frame}
-
-\begin{frame}
-  \frametitle{TOC}
-  \tableofcontents
 \end{frame}
 
 \section{The Common Lisp type system}
@@ -359,7 +359,6 @@
 \begin{frame}[fragile]
   \frametitle{\code{json-serializable} existence check}
 \begin{clcode}
-;; FIXME
 (defun json-compatible-class-p (class)
   (let* ((slots (class-slots class))
          (types (mapcar #'slot-definition-type slots)))
@@ -369,10 +368,11 @@
 
 (defmethod initialize-instance ((class json-serializable)
                                 &rest args)
-  (unless (json-compatible-class-p class)
-    (error "class ~a is not JSON-compatible" class))
-  (implement-json-serialize-method-for-class class)
-  (call-next-method))
+  (let ((class (call-next-method)))
+    (closer-mop:ensure-finalized class nil)
+    (unless (json-compatible-class-p class)
+      (error "class ~a is not JSON-compatible" class))
+    cls))
 \end{clcode}
 \end{frame}
 
@@ -394,12 +394,16 @@
 
   \pause
   \begin{itemize}
-  \item 3 \code{subtypep} calls \rarr{} one per slot
+  \item 2 \code{subtypep} calls \rarr{} one per slot
   \end{itemize}
 \end{frame}
 
+\begin{sectionframe}{Pre-processing}
+  Simplifying the problem
+\end{sectionframe}
+
 \begin{frame}[fragile]
-  \frametitle{First \code{subtypep} call \rarr{} \code{employee.name}}
+  \frametitle{\code{employee.name}}
   \begin{columns}
     \column{.60\textwidth}
   \begin{mintedcodebox}[title=\code{name}'s type verification,icon=\(\lambda\),compact]
@@ -450,6 +454,7 @@
       \item ``litteral'' types
       \item ``numeric'' types
       \end{itemize}
+    \item<6-> subtyping equivalence
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -479,7 +484,7 @@
                hash-table))
 \end{localcl}
 
-        \onslide<2-3>
+        \onslide<2->
 \begin{localcl}
 (subtypep '(or string
                (and symbol
@@ -518,7 +523,7 @@
                hash-table))
 \end{localcl}
 
-        \onslide<3>
+        \onslide<3->
 \begin{localcl}
 (subtypep '(or NIL
                (and NIL
@@ -536,17 +541,487 @@
     \end{mintedcodebox}
   \end{columns}
 
+  \begin{popup}{.65}
+    % \vspace*{-2em}
+    \onslide<4-5>
+    \begin{mintedcodebox}[headless,compact]
+\begin{localcl}
+(and (subtypep '(or string
+                    (and symbol
+                         (not keyword))
+                    NIL)
+               '(or NIL
+                    string
+                    (member :true :false :null)
+                    (and symbol
+                         (not keyword))
+                    list
+                    hash-table))
+     (subtypep '(or NIL
+                    (and NIL
+                         (not NIL))
+                    unsigned-byte)
+               '(or number
+                    NIL
+                    NIL
+                    (and NIL
+                         (not NIL))
+                    NIL
+                    NIL)))
+\end{localcl}
+    \end{mintedcodebox}
+  \end{popup}
+
   \begin{popup}{.75}
-    \onslide<4->
+    \onslide<5>
     \begin{macosbox}{Subtyping equivalence}
       \begin{itemize}
       \item $A \subseteq B \Leftrightarrow A \cap \overline B
         = \emptyset$
       \item {\small\code{(subtypep \plholder A \plholder B)} $\equiv$
-        \code{(subtypep '(and \plholder A (not \plholder B)) nil)}}
+          \code{(subtypep '(and \plholder A (not \plholder B)) nil)}}
+      \end{itemize}
+    \end{macosbox}
+  \end{popup}
+
+  \begin{popup}{.65}
+    \vspace*{-2.5em}
+    \onslide<6>
+    \begin{mintedcodebox}[headless,compact]
+\begin{localcl}
+(and (subtypep '(AND (or string
+                         (and symbol
+                              (not keyword))
+                         NIL)
+                     (NOT (or NIL
+                              string
+                              (member :true :false :null)
+                              (and symbol
+                                   (not keyword))
+                              list
+                              hash-table)))
+               NIL)
+     (subtypep '(AND (or NIL
+                         (and NIL
+                              (not NIL))
+                         unsigned-byte)
+                     (NOT (or number
+                              NIL
+                              NIL
+                              (and NIL
+                                   (not NIL))
+                              NIL
+                              NIL)))
+               NIL))
+\end{localcl}
+    \end{mintedcodebox}
+  \end{popup}
+
+  \begin{popup}{.7}
+    \vspace*{-2em}
+    \onslide<7->
+    \begin{mintedcodebox}[headless,compact]
+\begin{localcl}
+(and (NULL-LITERAL-TYPE-P '(AND (or string
+                                    (and symbol
+                                         (not keyword))
+                                    NIL)
+                                (NOT (or NIL
+                                         string
+                                         (member :true :false :null)
+                                         (and symbol
+                                              (not keyword))
+                                         list
+                                         hash-table))))
+     (NULL-NUMERIC-TYPE-P '(AND (or NIL
+                                    (and NIL
+                                         (not NIL))
+                                    unsigned-byte)
+                                (NOT (or number
+                                         NIL
+                                         NIL
+                                         (and NIL
+                                              (not NIL))
+                                         NIL
+                                         NIL)))))
+\end{localcl}
+    \end{mintedcodebox}
+  \end{popup}
+
+  \begin{popup}{.75}
+    \onslide<8>
+    \begin{macosbox}{Preprocessing summary}
+      \begin{itemize}
+      \item alias (\code{deftype}) expansion
+      \item splitting across ``type kingdoms''
+      \item $A \subseteq B \Leftrightarrow A \cap \overline B = \emptyset$
+      \item \emph{specialized sub-procedures}
+        \begin{itemize}
+        \item \code{null-literal-type-p}
+        \item \sout{\code{null-numeric-type-p}}
+        \end{itemize}
       \end{itemize}
     \end{macosbox}
   \end{popup}
 \end{frame}
+
+\begin{sectionframe}{Literal types specialized sub-procedure}
+  Primitive types, \code{member} type specifiers, CLOS classes
+\end{sectionframe}
+
+\begin{frame}
+  \frametitle{\textit{The Matrix}${}^{\text{\faTrademark}}$}
+  \begin{block}{Some\only<4->{ (unrealistic \emoji{🙈})} assumptions}
+    \begin{itemize}
+    \item We can enumerate all Common Lisp values \rarr{} $e_1, e_2, \dots,
+      e_\omega$
+    \item<2-> We can enumerate all combinations of these \rarr{} $u_1, u_2,
+      \dots, u_\omega$
+      \begin{itemize}
+      \item<3-> all Common Lisp types!
+      \end{itemize}
+    \end{itemize}
+  \end{block}
+
+  \begin{columns}
+    \column<5->{.3\textwidth}
+    \begin{align*}
+      \emptyset &= \{\}\quad\text{(a.k.a. \code{nil})}\\
+      u_1 &= \{e_1, e_3, e_4\} \\
+      u_2 &= \{e_1\} \\
+          &\vdots\\
+      u_\omega &= \{e_2,e_4,\cdots\}
+    \end{align*}
+
+    \column<6->{.7\textwidth}
+    \[ e_i \in u_j \Leftrightarrow \mathcal M_{j,i} = 1 \]
+    \[
+      \bordermatrix{
+        &e_1   &e_2   &e_3   &e_4   &\cdots&e_\omega \cr
+        \mathcal B_\emptyset &0     &0     &0     &0     &\cdots&0       \cr
+        \mathcal B_1     &1     &0     &1     &1     &\cdots&0       \cr
+        \mathcal B_2     &1     &0     &0     &0     &\cdots&0       \cr
+        \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots  \cr
+        \mathcal B_\omega&0     &1     &0     &1     &\cdots&0
+      }
+    \]
+  \end{columns}
+
+  \begin{popup}{.75}
+    \vspace*{-9em}
+    \onslide<7->
+    \begin{macosbox}{Properties}
+      \begin{itemize}
+      \item $\mathcal B_i$ \rarr{} bit-vector representing the type $u_i$
+      \item $u_i \cup u_j$ \rarr{} $\mathcal B_i \vee \mathcal B_j$ (bitwise)
+      \item $u_i \cap u_j$ \rarr{} $\mathcal B_i \wedge \mathcal B_j$ (bitwise)
+      \item $\overline{u_i}$ \rarr{} $\neg\mathcal B_i$ (bitwise)
+      % \item<8> $u_i \subseteq u_j \Leftrightarrow \mathcal B_i \wedge \neg
+      %   \mathcal B_j = \mathcal B_\emptyset\quad(= \mathcal B_{\code{nil}})$
+      \end{itemize}
+    \end{macosbox}
+  \end{popup}
+\end{frame}
+
+\begin{frame}[standout]
+  \frametitle{\code{null-literal-type-p}}
+  \begin{align*}
+    \code{(subtypep \plholder{u_i} \plholder{u_j})} &\equiv u_i \subseteq u_j \\
+                                                    &\Leftrightarrow u_i \cap \overline{u_j} = \emptyset\\
+                                                    &\equiv \code{(null-literal-type-p '(and \plholder{u_i} (not \plholder{u_j})))} \\
+                                                    &\Leftrightarrow \mathcal B_i \wedge \neg \mathcal B_j = \mathcal B_\emptyset
+  \end{align*}
+
+  \pause
+  \begin{itemize}
+  \item All about matrix lookups \& bitwise operations on bit-vectors
+  \item Very fast, but\dots
+    \pause
+  \item \dots still an \emph{infinite} matrix! \emoji{😔}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Getting finite}
+  \begin{columns}
+    \column{.5\textwidth}
+    \begin{overprint}
+      \onslide<1>
+      \[
+        \bordermatrix{
+          &e_1   &e_2   &e_3   &e_4   &\cdots&e_N &\cdots \cr
+          \mathcal B_\emptyset &0     &0     &0     &0     &\cdots&0&\cdots       \cr
+          \mathcal B_1     &1     &0     &1     &1     &\cdots&0&\cdots       \cr
+          \mathcal B_2     &1     &0     &0     &0     &\cdots&0&\cdots       \cr
+          \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots&\ddots  \cr
+          \mathcal B_M&0     &1     &0     &1     &\cdots&0&\cdots \cr
+          \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots&\ddots  \cr
+        }
+      \]
+
+      \onslide<2>
+      \[
+        \bordermatrix{
+          &e_1   &e_2   &e_3   &e_4   &\cdots&e_N &\cdots \cr
+          \mathcal B_\emptyset &0     &0     &0     &0     &\cdots&0&\cdots       \cr
+          \mathcal B_1     &1     &0     &1     &1     &\cdots&0&\cdots       \cr
+          \mathcal B_2     &1     &0     &0     &0     &\cdots&0&\cdots       \cr
+          \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots&\ddots  \cr
+          \mathcal B_M&0     &1     &0     &1     &\cdots&0&\cdots \cr
+        }
+      \]
+
+      \onslide<3>
+      \[
+        \bordermatrix{
+          &e_1   &e_2   &e_3   &e_4   &\cdots&e_N \cr
+          \mathcal B_\emptyset &0     &0     &0     &0     &\cdots&0\cr
+          \mathcal B_1     &1     &0     &1     &1     &\cdots&0\cr
+          \mathcal B_2     &1     &0     &0     &0     &\cdots&0\cr
+          \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots\cr
+          \mathcal B_M&0     &1     &0     &1     &\cdots&0\cr
+        }
+      \]
+
+      \onslide<4>
+      \[
+        \bordermatrix{
+          &r_1   &r_2   &r_3   &r_4   &\cdots&r_N \cr
+          \mathcal B_\emptyset &0     &0     &0     &0     &\cdots&0\cr
+          \mathcal B_1     &1     &0     &1     &1     &\cdots&0\cr
+          \mathcal B_2     &1     &0     &0     &0     &\cdots&0\cr
+          \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots\cr
+          \mathcal B_M&0     &1     &0     &1     &\cdots&0\cr
+        }
+      \]
+    \end{overprint}
+    \column{.5\textwidth}
+    \begin{itemize}
+    \item<2-> Types ($u_k$ and associated $\mathcal B_k$)
+      \begin{itemize}
+      \item only those in \code{subtypep} call
+      \item \code{nil} is always involved (somehow)
+      \end{itemize}
+    \item<3-> Values ($e_k$)
+      \begin{itemize}
+      \item only \emph{sufficiently many}
+      \item distinguish each type from the others
+      \end{itemize}
+    \item<4-> Not just ``values'' \rarr{} \emph{representative} elements
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Back to our problem}
+  \newcommand\bv[1]{\ensuremath{\mathcal B_{\code{\scriptsize#1}}}}
+% \begin{clcode}
+% (null-literal-type-p '(and (or string
+%                                (and symbol
+%                                     (not keyword))
+%                                nil)
+%                             (not (or nil
+%                                      string
+%                                      (member :true :false :null)
+%                                      (and symbol
+%                                           (not keyword))
+%                                      list
+%                                      hash-table))))
+% \end{clcode}
+  \begin{columns}
+    \column{.5\textwidth}
+\begin{smallclcode}
+(null-literal-type-p
+ '(and (or string
+           (and symbol
+                (not keyword))
+           nil)
+       (not (or nil
+                string
+                (member :true
+                        :false
+                        :null)
+                (and symbol
+                     (not keyword))
+                list
+                hash-table))))
+\end{smallclcode}
+
+    \column<2->{.5\textwidth}
+    \begin{itemize}
+    \item<2-> Matrix setup
+      \begin{itemize}
+      \item primitive types known at compile-time
+      \item manual representative choice
+      \end{itemize}
+    \item<4-> Lookup bit-vectors \& translate logic operators
+      % \begin{itemize}
+      % \item with care to avoid misrepresentation \emoji{😛}
+      % \end{itemize}
+    \item<11-> \code{(member \plholder a \plholder b)} type
+      specifier bit-vector
+      \begin{enumerate}
+      \item register $a$ and $b$ as representatives
+      \item \(
+        \bv{(member \plholder a \plholder b)} =
+        \bv{$\{a\}$} \vee \bv{$\{b\}$}
+        \)
+      \end{enumerate}
+    \item<13-> Eventually reduces to \bv{nil}
+    \item<13-> \code{null-literal-type-p} returns true
+    \end{itemize}
+  \end{columns}
+
+  \begin{popup}{.85}
+    \onslide<5-10,12>
+    \begin{macosbox}{Bit-vector expression reduction}
+      \centering
+      \newcommand\inter{\alt<5>{$\cap$}{$\wedge$}}
+      \newcommand\union{\alt<5>{$\cup$}{$\vee$}}
+      \newcommand\compl{\alt<5>{$\phantom{ }^C$}{$\neg$}}
+      \newcommand\co[1]{\alt<5>{\code{#1}}{\bv{#1}}}
+      \begin{forest}
+        [\inter
+         [\union
+          [\co{string}]
+          [\inter
+           [\co{symbol}]
+           [\compl [\co{keyword}]]]
+          [\co{nil}]]
+         [\compl
+          [\union
+           [\co{nil}]
+           [\co{string}]
+           [\alert<7>{\co{MEMBER}}]
+           [\inter [\co{symbol}] [\compl [\co{keyword}]]]
+           [\co{list}]
+           [\co{hash-table}]]]]
+      \end{forest}
+    \end{macosbox}
+  \end{popup}
+
+  \begin{popup}{.80}
+    \onslide<3,8-9>
+    \begin{macosbox}{The Matrix}
+      \newcommand\repr[1]{\code{#1}}%{\rotatebox{45}{\code{#1}}}
+      \begin{overprint}
+        \onslide<3,8>
+        \[
+          \bordermatrix{
+            &\repr{t}&\repr{nil}&\repr{sym}&\repr{"str"}&\cdots&\repr{\scriptsize(l i s t)}\cr
+            \bv{nil}     &0     &0     &0     &0     &\cdots&0\cr
+            \bv{t} &1     &1     &1     &1     &\cdots&1\cr
+            \bv{null}     &0     &1     &0     &0     &\cdots&0\cr
+            \bv{symbol}     &1     &1     &1     &0     &\cdots&0\cr
+            \bv{string}     &0     &0     &0     &1     &\cdots&0\cr
+            \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots\cr
+            \bv{list}     &0     &1     &0     &0     &\cdots&1\cr
+          }
+        \]
+
+        \onslide<9>
+        \[
+          \bordermatrix{
+            &\repr{t}&\repr{nil}&\repr{sym}&\repr{"str"}&\cdots&\repr{\scriptsize(l i s t)}&\repr{\scriptsize:true}&\repr{\scriptsize:false}&\repr{\scriptsize:null}\cr
+            \bv{nil}     &0     &0     &0     &0     &\cdots&0&0&0&0\cr
+            \bv{t} &1     &1     &1     &1     &\cdots&1&1&1&1\cr
+            \bv{null}     &0     &1     &0     &0     &\cdots&0&0&0&0\cr
+            \bv{symbol}     &1     &1     &1     &0     &\cdots&0&1&1&1\cr
+            \bv{string}     &0     &0     &0     &1     &\cdots&0&0&0&0\cr
+            \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots&\vdots&\vdots&\vdots\cr
+            \bv{list}     &0     &1     &0     &0     &\cdots&1&0&0&0\cr
+            \bv{MEMBER}&0     &0     &0     &0     &\cdots&0&1&1&1\cr
+          }
+        \]
+      \end{overprint}
+    \end{macosbox}
+  \end{popup}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\code{employee} verification}
+  \begin{columns}
+    \column{.65\textwidth}
+\begin{hlclcode}
+(defclass employee ()
+  ((name :type (or string
+                   (and symbol
+                        (not keyword))
+                   unsigned-byte))
+   (half-time-p (or boolean
+                    (member :true
+                            :false))))
+  (:metaclass json-serializable))
+\end{hlclcode}
+
+\begin{hlclcode}
+(subtypep '(or string
+               (and symbol
+                    (not keyword))
+               unsigned-byte)
+          'json)
+\end{hlclcode}
+
+    \column{.35\textwidth}
+    \begin{itemize}
+    \item<3->[\good] \code{employee.name}
+      % \begin{itemize}
+      % \item \code{null-literal-type-p} \rarr{} \code t
+      % \item \code{null-numeric-type-p} \rarr{} \code t
+      % \end{itemize}
+    \item<4->[\alt<4>{\color{watchOS-purple}\faQuestion}{\good}] \code{employee.half-time-p}
+      % \begin{itemize}[<+->]
+      % \item \code{boolean} $\equiv$ \code{(member t nil)}
+      % \item \code{t}, \code{nil}, \code{:true}, \code{:false} \rarr{} alrady
+      %   registered
+      % \item \code{null-literal-type-p} \rarr{} \code t
+      % \item \code{null-numeric-type-p} \rarr{} \code t
+      % \end{itemize}
+    \end{itemize}
+
+    \pause
+    \bigskip
+    \only<6>{%
+      \begin{exampleblock}{Conclusion}
+        \code{employee} is JSON-compatible! \emoji{🎉}
+      \end{exampleblock}}
+  \end{columns}
+
+
+  \begin{popup}{.7}
+    \vspace*{-2em}
+    \onslide<2>
+    \begin{mintedcodebox}[headless,compact]
+\begin{minted}[fontsize=\scriptsize]{cl}
+(and (NULL-LITERAL-TYPE-P '(AND (or string
+                                    (and symbol
+                                         (not keyword))
+                                    NIL)
+                                (NOT (or NIL
+                                         string
+                                         (member :true :false :null)
+                                         (and symbol
+                                              (not keyword))
+                                         list
+                                         hash-table))))
+     (NULL-NUMERIC-TYPE-P '(AND (or NIL
+                                    (and NIL
+                                         (not NIL))
+                                    unsigned-byte)
+                                (NOT (or number
+                                         NIL
+                                         NIL
+                                         (and NIL
+                                              (not NIL))
+                                         NIL
+                                         NIL)))))
+\end{minted}
+    \end{mintedcodebox}
+  \end{popup}
+\end{frame}
+
+\begin{sectionframe}{Going further}
+  CLOS classes, representation conflicts \& \code{null-numeric-type-p}
+\end{sectionframe}
 
 \end{document}
