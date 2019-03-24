@@ -259,7 +259,7 @@
 
 \begin{sectionframe}{Application}
   % Step by step application for some simple example
-  Step by step execution of \code{subtypep}
+  Use case of \code{subtypep}
 \end{sectionframe}
 
 \begin{frame}[fragile]
@@ -379,16 +379,14 @@
 \begin{frame}[fragile]
   \frametitle{\code{employee} class}
 \begin{clcode}
-(deftype position-type () '(member :ceo :dev :sales))
-
 (defclass employee ()
   ((name :type (or string
                    (and symbol
                         (not keyword))
                    unsigned-byte))
-   (position :type position-type)
-   (previous-position :type (and position-type
-                                 (not (eql :ceo)))))
+   (half-time-p (or boolean
+                    (member :true
+                            :false))))
   (:metaclass json-serializable))
 \end{clcode}
 
@@ -403,7 +401,7 @@
 \end{sectionframe}
 
 \begin{frame}[fragile]
-  \frametitle{\code{employee.name}}
+  \frametitle{Pre-processing steps}
   \begin{columns}
     \column{.60\textwidth}
   \begin{mintedcodebox}[title=\code{name}'s type verification,icon=\(\lambda\),compact]
@@ -1021,7 +1019,7 @@
 \end{frame}
 
 \begin{sectionframe}{Going further}
-  CLOS classes, representation conflicts \& \code{null-numeric-type-p}
+  CLOS classes \& \code{null-numeric-type-p}
 \end{sectionframe}
 
 \begin{frame}
@@ -1053,16 +1051,17 @@
   \end{itemize}
 \end{frame}
 
-\begin{frame}
-  \frametitle{Representation conflicts}
-  TODO?
-\end{frame}
+% \begin{frame}
+%   \frametitle{Representation conflicts}
+%   TODO?
+% \end{frame}
 
 \begin{frame}
   \frametitle{\code{null-numeric-type-p}}
   \begin{itemize}
   \item Many representations of numerical data types
   \item Range representation available \rarr{} \code{(integer (12) *)}
+  \item Subtyping problem \Rarr{} interval combination canonicalization
   \item Exponential theoretical complexity
     \begin{itemize}
     \item acceptable in practice
@@ -1073,9 +1072,16 @@
 \begin{frame}[standout]
   \frametitle{Conclusion}
   \begin{itemize}
-  \item A
-  \item B
-  \item \alt<2>{\sout{More efficient} April fools}{More efficient}
+  \item Baker's decision procedure
+  \item Implementation
+    \begin{itemize}
+    \item Pre-processing
+    \item Primitive types, CLOS classes, \code{member} type specifiers
+    \item Numeric ranges
+    \end{itemize}
+  \item Still a work in progress
+  \item Intuitively more accurate
+  \item \alt<2>{\sout{More efficient} \textit{April fools \emoji{😺}}}{More efficient}
   \end{itemize}
 \end{frame}
 
