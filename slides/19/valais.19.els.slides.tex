@@ -53,8 +53,6 @@
 \titlepage{}
 \end{frame}
 
-\section{The Common Lisp type system}
-
 \newenvironment{sectionframe}[1]{%
   \begin{frame}[standout]
     \centering
@@ -139,7 +137,6 @@
   \end{alertblock}
 \end{frame}
 
-\subsection{Definition}
 
 \begin{frame}
   \frametitle{\code{subtypep}}
@@ -165,9 +162,6 @@
   \end{itemize}
 \end{frame}
 
-\section{Baker's decision procedure}
-\subsection{Presentation}
-
 \begin{frame}
   \frametitle{Baker's decision procedure}
   \setbeamercovered{highly dynamic}
@@ -190,6 +184,24 @@
     \item[\maybe] efficiency% \rarr{} comparable to ``existing'' implementations
     \end{itemize}
   \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Content}
+  \begin{enumerate}
+    \bf
+    \setlength\itemsep{1em}
+  \item Application using \code{subtypep}
+  \item Baker's decision procedure
+    \begin{enumerate}
+      \setlength\itemsep{.5em}
+      \it
+    \item Pre-processing
+    \item Types as bitsets
+    \item Type specifier \rarr{} bitset expression
+    \end{enumerate}
+  \item Going further: CLOS classes
+  \end{enumerate}
 \end{frame}
 
 \begin{sectionframe}{Application}
@@ -485,40 +497,57 @@
 
 \begin{frame}[fragile]
   \frametitle{\code{member} type specifiers}
-  TODO
+  \begin{itemize}
+  \item Explicitly provide type's elements
+  \item \code{(member \plholder A \plholder B \plholder C)} $\equiv \{A, B, C\}$
+  \item ``Anonymous'' types
+  \item Bitset $\bs_{\scriptsize\code{(member \plholder A \plholder B \plholder
+        C)}}$
+    \begin{enumerate}
+    \item add $A, B, C$ as representatives
+    \item $\bs_{\scriptsize\code{(member \plholder A \plholder B \plholder
+        C)}} = \bs_{\{A\}} \vee \bs_{\{A\}} \vee \bs_{\{A\}}$
+    \end{enumerate}
+  \end{itemize}
 \end{frame}
-
-% \begin{frame}
-%   \frametitle{\code{null-numeric-type-p}}
-%   \begin{itemize}
-%   \item Many representations of numerical data types
-%   \item Range representation available \rarr{} \code{(integer (12) *)}
-%   \item Subtyping problem \Rarr{} interval combination canonicalization
-%   \item Exponential theoretical complexity
-%     \begin{itemize}
-%     \item acceptable in practice
-%     \end{itemize}
-%   \end{itemize}
-% \end{frame}
 
 \begin{frame}[standout]
   \frametitle{Conclusion}
   \begin{itemize}
+  \item \code{subtypep} unreliability
   \item Baker's decision procedure
-  \item Implementation
     \begin{itemize}
-    \item Pre-processing
-    \item Primitive types, CLOS classes, \code{member} type specifiers
-    \item Numeric ranges
+    \item no implementation given
+    \item many details missing
     \end{itemize}
-  \item Still a work in progress
-  \item Intuitively more accurate
-  % \item \alt<2>{\sout{More efficient} \textit{April fools \emoji{😺}}}{More efficient}
+  \item Our implementation
+    \begin{itemize}
+    \item incomplete \& experimental
+    \item motivating accuracy \& performance measures
+    \end{itemize}
+  \item Future work
+    \begin{itemize}
+    \item implement missing type specifiers (\code{array} \& \code{complex})
+    \item find solutions for \code{cons} \& \code{satisfies}
+    \item open source the implementation!
+    \end{itemize}
   \end{itemize}
 \end{frame}
 
 \begin{sectionframe}{\it Thanks for listening! \emoji[\normalsize]{😃}}
   \it Any question?
 \end{sectionframe}
+
+\begin{frame}[allowframebreaks]
+  \bibliographystyle{plain}
+  \nocite{bib:ansi.94.cl}
+  \nocite{baker1992}
+  \nocite{newton.18.els}
+  \nocite{newton.18.phd}
+  \nocite{gcl-devel.cons}
+  \nocite{valais.19.els}
+  \nocite{verna.06.ecoop}
+  \bibliography{../common}
+\end{frame}
 
 \end{document}
