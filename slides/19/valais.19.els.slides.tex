@@ -119,7 +119,7 @@
 \end{frame}
 
 \begin{frame}
-  \frametitle{\code{satisfies} type specifier}
+  \frametitle{\code{subtypep} cannot always answer}
   \begin{itemize}
   \item \code{(satisfies \plholder{predicate})} $\equiv \left\{x \mid
       predicate(x)\right\}$
@@ -139,7 +139,7 @@
 
 
 \begin{frame}
-  \frametitle{\code{subtypep}}
+  \frametitle{\code{subtypep} return values}
   \[
     \code{(subtypep \plholder{A} \plholder{B})} =
     \begin{cases}
@@ -169,7 +169,8 @@
     \column{.45\paperwidth}
     \begin{itemize}
     \item[\plus] focus on result accuracy
-    \item[\plus] \emph{never} returns \code{(NIL NIL)} uselessly
+    \item[\plus] \emph{never} returns \code{(NIL NIL)} when it is possible to
+      answer
       \pause
     \item[\minus] paper difficult to read
     \item[\minus] not exhaustive
@@ -179,7 +180,7 @@
     \pause
     \column{.45\paperwidth}
     \begin{itemize}
-    \item[\minus] \emph{not} open source
+    \item[\minus] no implementation available
     \item[\minus] exponential complexity (theoretical)
     \item[\maybe] efficiency% \rarr{} comparable to ``existing'' implementations
     \end{itemize}
@@ -194,20 +195,20 @@
   \item Application using \code{subtypep}
   \item Baker's decision procedure
     \begin{enumerate}
-      \setlength\itemsep{.5em}
+      \setlength\itemsep{1em}
       \it
     \item Pre-processing
-    \item Types as bitsets
-    \item Type specifier \rarr{} bitset expression
+    \item Types as bit-vectors
+    \item Type specifier \rarr{} bit-vector expression
     \end{enumerate}
   \item Going further: CLOS classes
   \end{enumerate}
 \end{frame}
 
-\begin{sectionframe}{Application}
-  % Step by step application for some simple example
-  Use case of \code{subtypep}
-\end{sectionframe}
+% \begin{sectionframe}{Application}
+%   % Step by step application for some simple example
+%   Use case of \code{subtypep}
+% \end{sectionframe}
 
 \begin{frame}[fragile]
   \frametitle{The problem}
@@ -334,11 +335,11 @@
 
 \newcommand\bs{\ensuremath{\mathcal B}}
 \begin{frame}[fragile]
-  \frametitle{Bitset type representation}
+  \frametitle{Bit-vector type representation}
   \begin{columns}
     \column{.5\textwidth}
     \begin{itemize}
-    \item Types represented as bitsets $\bs_P$
+    \item Types represented as bit-vectors $\bs_P$
     \item Bit index \rarr{} \emph{representative element} $r_i$
     \end{itemize}
 
@@ -351,12 +352,12 @@
     \]
 
     \column<3>{.5\textwidth}
-    \begin{block}{Properties}
+    \begin{block}{Properties (bitwise)}
       \vspace*{-1em}
       \begin{align*}
-        \bs_{P \cup Q} &= \bs_P \vee \bs_Q \quad\text{(bitwise)}\\
-        \bs_{P \cap Q} &= \bs_P \wedge \bs_Q \quad\text{(bitwise)}\\
-        \bs_{\overline P} &= \neg\bs_P \quad\text{(bitwise)}
+        \bs_{P \cup Q} &= \bs_P \vee \bs_Q\\
+        \bs_{P \cap Q} &= \bs_P \wedge \bs_Q\\
+        \bs_{\overline P} &= \neg\bs_P
       \end{align*}
     \end{block}
   \end{columns}
@@ -399,7 +400,7 @@
 
   \begin{popup}{.85}
     \onslide<2-3>
-    \begin{macosbox}{Bitset expression reduction}
+    \begin{macosbox}{Bit-vector expression reduction}
       \centering
       \newcommand\inter{\alt<2>{$\cap$}{$\wedge$}}
       \newcommand\union{\alt<2>{$\cup$}{$\vee$}}
@@ -451,19 +452,23 @@
     \begin{itemize}
     \item[\good] \code{employee.name}
     \item<2->[\alt<2>{\maybe}{\good}] \code{employee.half-time-p}
+      % \begin{itemize}
+      % \item<3-> $\code{boolean} \subseteq \code{symbol} \Rarr \code{boolean}
+      %   \subseteq \code{json}$
+      % \end{itemize}
     \end{itemize}
 
     \pause
     \bigskip
-    \only<4>{%
+    \uncover<4>{%
       \begin{exampleblock}{Conclusion}
         \code{employee} is JSON-compatible! \emoji{🎉}
       \end{exampleblock}}
   \end{columns}
 \end{frame}
 
-\begin{sectionframe}{Going further}
-  CLOS classes \& \code{member} type specifiers
+\begin{sectionframe}{CLOS classes \& \code{member} type specifiers}
+  Choosing representative elements right
 \end{sectionframe}
 
 \begin{frame}
@@ -501,7 +506,7 @@
   \item Explicitly provide type's elements
   \item \code{(member \plholder A \plholder B \plholder C)} $\equiv \{A, B, C\}$
   \item ``Anonymous'' types
-  \item Bitset $\bs_{\scriptsize\code{(member \plholder A \plholder B \plholder
+  \item Bit-vector $\bs_{\scriptsize\code{(member \plholder A \plholder B \plholder
         C)}}$
     \begin{enumerate}
     \item add $A, B, C$ as representatives
@@ -538,16 +543,16 @@
   \it Any question?
 \end{sectionframe}
 
-\begin{frame}[allowframebreaks]
-  \bibliographystyle{plain}
-  \nocite{bib:ansi.94.cl}
-  \nocite{baker1992}
-  \nocite{newton.18.els}
-  \nocite{newton.18.phd}
-  \nocite{gcl-devel.cons}
-  \nocite{valais.19.els}
-  \nocite{verna.06.ecoop}
-  \bibliography{../common}
-\end{frame}
+% \begin{frame}[allowframebreaks]
+%   \bibliographystyle{plain}
+%   \nocite{bib:ansi.94.cl}
+%   \nocite{baker1992}
+%   \nocite{newton.18.els}
+%   \nocite{newton.18.phd}
+%   \nocite{gcl-devel.cons}
+%   \nocite{valais.19.els}
+%   \nocite{verna.06.ecoop}
+%   \bibliography{../common}
+% \end{frame}
 
 \end{document}
