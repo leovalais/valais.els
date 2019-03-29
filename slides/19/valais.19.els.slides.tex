@@ -73,26 +73,18 @@
   \frametitle{The Common Lisp type system}
   \begin{itemize}
   \item Types \rarr{} sets, subtypes \rarr{} subsets
-  \item Types \rarr{} \emph{first class} values
+  \item<3-> Types \rarr{} \emph{first class} values
   \end{itemize}
 
   \begin{itemize}
-  \item<3-> \code{(subtypep \plholder A \plholder B)} $\equiv A \subseteq B?$
-  \item<3-> Predicate function
+  \item<4-> \code{(subtypep \plholder A \plholder B)} $\equiv A \subseteq B?$
+  \item<4-> Predicate function
   \end{itemize}
 
   \pause
   \medskip
 
   \begin{overprint}
-    \onslide<4->
-\begin{clcode}
-(subtypep '(or my-class string (integer 0 (1024)))
-          '(or super-class
-               (array * 1)
-               (unsigned-byte 10)))
-\end{clcode}
-
     \onslide<2>
 \begin{clcode}
 (defun tr (M)
@@ -101,10 +93,18 @@
      (aref M 1 1)
      (aref M 2 2)))
 \end{clcode}
+
+    \onslide<5->
+\begin{clcode}
+(subtypep '(or my-class string (integer 0 (1024)))
+          '(or super-class
+               (array * 1)
+               (unsigned-byte 10)))
+\end{clcode}
   \end{overprint}
 
   \begin{popup}{.75}
-    \onslide<5>
+    \onslide<6>
     \begin{macosbox}{}
       \begin{itemize}
       \item Type specifiers arbitrarily deep
@@ -145,8 +145,8 @@
     \begin{cases}
       \code{(T T)} &\rarr{} A \subseteq B \\
       \code{(NIL T)} &\rarr{} A \not\subseteq B \\
-      \code{(NIL NIL)} &\rarr{} \text{\alt<1>{``I can't answer''}{%
-          \alert<2>{``I give up, sorry \emoji{🤕}''}}}
+      \code{(NIL NIL)} &\rarr{} \text{\alt<1>{``undecidable''}{%
+          \alert<2>{``I gave up, sorry \emoji{🤕}''}}}
     \end{cases}
   \]
 
@@ -195,13 +195,13 @@
   \item Application using \code{subtypep}
   \item Baker's decision procedure
     \begin{enumerate}
-      \setlength\itemsep{1em}
+      \setlength\itemsep{.5em}
       \it
     \item Pre-processing
     \item Types as bit-vectors
     \item Type specifier \rarr{} bit-vector expression
     \end{enumerate}
-  \item Going further: CLOS classes
+  \item Going further
   \end{enumerate}
 \end{frame}
 
@@ -293,7 +293,7 @@
           'json)
 \end{clcode}
 
-      \onslide<2-3>
+      \onslide<2>
 \begin{clcode}
 (subtypep '(or string
                (and symbol
@@ -307,7 +307,7 @@
                hash-table))
 \end{clcode}
 
-      \onslide<4->
+      \onslide<3->
 \begin{clcode}
 (subtypep
  '(AND (or string
@@ -327,8 +327,7 @@
     \column{.35\textwidth}
     \begin{itemize}
     \item<2-> Alias expansion
-    \item<3-> Syntactic sugar elimination
-    \item<4-> $P \subseteq Q \Rarr P \cap \neg Q = \emptyset$
+    \item<3-> $P \subseteq Q \Rarr P \cap \neg Q = \emptyset$
     \end{itemize}
   \end{columns}
 \end{frame}
@@ -336,22 +335,26 @@
 \newcommand\bs{\ensuremath{\mathcal B}}
 \begin{frame}[fragile]
   \frametitle{Bit-vector type representation}
+  \pause
   \begin{columns}
-    \column{.5\textwidth}
-    \begin{itemize}
-    \item Types represented as bit-vectors $\bs_P$
-    \item Bit index \rarr{} \emph{representative element} $r_i$
-    \end{itemize}
+    \column{.6\textwidth}
+  Types represented as bit-vectors $\bs_P$
 
-    \[
-      \bs_P(i) =
-      \begin{cases}
-        1 \rarr r_i \in P \\
-        0 \rarr r_i \not\in P
-      \end{cases}
-    \]
+  \[
+    \renewcommand\bs[1]{\ensuremath{\mathcal B_{\scriptsize\code{#1}}}}
+    \bordermatrix{
+      &\code{t}&\code{nil}&\code{sym}&\code{"str"}&\cdots&\code{\scriptsize(l i s t)}\cr
+      \bs{nil}     &0     &0     &0     &0     &\cdots&0\cr
+      \bs{t} &1     &1     &1     &1     &\cdots&1\cr
+      \bs{null}     &0     &1     &0     &0     &\cdots&0\cr
+      \bs{symbol}     &1     &1     &1     &0     &\cdots&0\cr
+      \bs{string}     &0     &0     &0     &1     &\cdots&0\cr
+      \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots\cr
+      \bs{list}     &0     &1     &0     &0     &\cdots&1\cr
+    }
+  \]
 
-    \column<3>{.5\textwidth}
+    \column<3>{.4\textwidth}
     \begin{block}{Properties (bitwise)}
       \vspace*{-1em}
       \begin{align*}
@@ -364,21 +367,6 @@
 
   \begin{popup}{.75}
     \onslide<2>
-    \begin{macosbox}{The Matrix}
-      \renewcommand\bs[1]{\ensuremath{\mathcal B_{\scriptsize\code{#1}}}}
-      \[
-        \bordermatrix{
-          &\code{t}&\code{nil}&\code{sym}&\code{"str"}&\cdots&\code{\scriptsize(l i s t)}\cr
-          \bs{nil}     &0     &0     &0     &0     &\cdots&0\cr
-          \bs{t} &1     &1     &1     &1     &\cdots&1\cr
-          \bs{null}     &0     &1     &0     &0     &\cdots&0\cr
-          \bs{symbol}     &1     &1     &1     &0     &\cdots&0\cr
-          \bs{string}     &0     &0     &0     &1     &\cdots&0\cr
-          \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots\cr
-          \bs{list}     &0     &1     &0     &0     &\cdots&1\cr
-        }
-      \]
-    \end{macosbox}
   \end{popup}
 \end{frame}
 
@@ -481,7 +469,7 @@
     \pause
   \item Baker's solution
     \begin{itemize}
-    \item \emph{hook into \code{defclass}/\code{defstruct} implementation}
+    \item \emph{hook into \code{defclass} implementation}
     \item[\tiny\minus] not portable
     \item[\tiny\minus] maybe not trivial
     \end{itemize}
@@ -493,7 +481,7 @@
   \item Our solution \rarr{} the Meta Object Protocol
     \begin{itemize}
     \item \emph{register class prototypes \rarr{} ``fake'' instances}
-    \item[\tiny\plus] portable
+    \item[\tiny\plus] portable (for implementations supporting the MOP)
     \item[\tiny\plus] easier to implement
     \item[\tiny\plus] packageable
     \end{itemize}
@@ -524,6 +512,7 @@
     \begin{itemize}
     \item no implementation given
     \item many details missing
+    \item seems elegant and powerful
     \end{itemize}
   \item Our implementation
     \begin{itemize}
