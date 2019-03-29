@@ -1,0 +1,547 @@
+\documentclass[aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{minted}
+\usepackage{appendixnumberbeamer}
+\usepackage{hyperref}
+\usepackage{macosbox}
+\usepackage{codebox}
+\usepackage{apple_emoji}
+\usepackage[normalem]{ulem}
+\usepackage{forest}
+% \usepackage[texcoord,grid,gridunit=mm,gridcolor=red!20,subgridcolor=gray!10]{eso-pic}
+
+\usemintedstyle{colorful}
+\usecodeboxmintedstyle{zenburn}
+\newminted{cl}{autogobble,breaklines,escapeinside=||}
+\setmintedcodebox{clcode}{title=Common Lisp,icon=\(\mathbf{\lambda}\),compact}
+\newminted[smallclcode]{cl}{autogobble,breaklines,escapeinside=||,fontsize=\scriptsize}
+\setmintedcodebox{smallclcode}{title=Common Lisp,icon=\(\mathbf{\lambda}\),compact}
+\newminted[hlclcode]{cl}{autogobble,breaklines,escapeinside=||}
+\setmintedcodebox{hlclcode}{headless,compact}
+
+\usetheme{avalon}
+\def\avalonprogressbar{1}
+\def\avalondarkmintedstyle{monokai}%{zenburn}
+
+\title{Implementing Baker's \texttt{SUBTYPEP} decision procedure\vspace*{-5mm}}
+% \subtitle{European Lisp Symposium}
+\date{April 1st, 2019}
+\author{Léo Valais}
+\institute{European Lisp Symposium}
+
+\titlegraphic{\includegraphics[scale=.2]{lrde_epita.png}}
+
+\renewcommand\code[1]{\texttt{#1}}
+\newcommand\rarr{\ensuremath{\rightarrow}}
+\newcommand\Rarr{\ensuremath{\Rightarrow}}
+\newcommand\plholder[1]{\ensuremath{\langle {#1} \rangle}}
+\newcommand\emoji[2][\tiny]{{#1#2}}
+\newcommand\plus{{\color{watchOS-blue}\faPlus}}
+\newcommand\minus{{\color{watchOS-red}\faMinus}}
+\newcommand\good{{\color{watchOS-green}\faCheck}}
+\newcommand\bad{{\color{watchOS-red}\faClose}}
+\newcommand\tgood{{\color{watchOS-purple}\faThumbsOUp}}
+\newcommand\tbad{{\color{watchOS-red}\faThumbsODown}}
+\newcommand\maybe{{\color{watchOS-purple}\faQuestion}}
+
+\begin{document}
+
+\begin{frame}
+\titlepage{}
+\end{frame}
+
+\newenvironment{sectionframe}[1]{%
+  \begin{frame}[standout]
+    \centering
+    \Huge
+    {\bf #1}
+
+    {\usebeamercolor[bg]{secondary color}\noindent\sout{\hfill}}
+    \bigskip
+
+    \large
+  }{\end{frame}}
+
+\begin{sectionframe}{Introduction}
+  Common Lisp type system, \code{subtypep} \\\& Baker's decision procedure
+\end{sectionframe}
+
+\begin{frame}[fragile]
+  \frametitle{The Common Lisp type system}
+  \begin{itemize}
+  \item Types \rarr{} sets, subtypes \rarr{} subsets
+  \item<3-> Types \rarr{} \emph{first class} values
+  \end{itemize}
+
+  \begin{itemize}
+  \item<4-> \code{(subtypep \plholder A \plholder B)} $\equiv A \subseteq B?$
+  \item<4-> Predicate function
+  \end{itemize}
+
+  \pause
+  \medskip
+
+  \begin{overprint}
+    \onslide<2>
+\begin{clcode}
+(defun tr (M)
+  (declare (type (array real (3 3)) M))
+  (+ (aref M 0 0)
+     (aref M 1 1)
+     (aref M 2 2)))
+\end{clcode}
+
+    \onslide<5->
+\begin{clcode}
+(subtypep '(or my-class string (integer 0 (1024)))
+          '(or super-class
+               (array * 1)
+               (unsigned-byte 10)))
+\end{clcode}
+  \end{overprint}
+
+  \begin{popup}{.75}
+    \onslide<6>
+    \begin{macosbox}{}
+      \begin{itemize}
+      \item Type specifiers arbitrarily deep
+      \item May take a while to retrun
+      \end{itemize}
+
+      \begin{alertblock}{Problem \#1 --- complex input}
+        Arbitrarily complex input type specifiers
+      \end{alertblock}
+    \end{macosbox}
+  \end{popup}
+\end{frame}
+
+\begin{frame}
+  \frametitle{\code{subtypep} cannot always answer}
+  \begin{itemize}
+  \item \code{(satisfies \plholder{predicate})} $\equiv \left\{x \mid
+      predicate(x)\right\}$
+  \item \code{(satisfies oddp)} \rarr{} all odd numbers
+    \pause
+  \item \code{(subtypep '(satisfies oddp) '(satisfies evenp))}
+    \pause
+  \item \alert{halting problem} \rarr{} \code{subtypep} \emph{cannot} even answer
+    \emoji{😱}
+  \end{itemize}
+
+  \pause
+  \begin{alertblock}{Problem \#2 --- undecidability}
+    \code{Subtypep} cannot answer for some type specifiers
+  \end{alertblock}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{\code{subtypep} return values}
+  \[
+    \code{(subtypep \plholder{A} \plholder{B})} =
+    \begin{cases}
+      \code{(T T)} &\rarr{} A \subseteq B \\
+      \code{(NIL T)} &\rarr{} A \not\subseteq B \\
+      \code{(NIL NIL)} &\rarr{} \text{\alt<1>{``undecidable''}{%
+          \alert<2>{``I gave up, sorry \emoji{🤕}''}}}
+    \end{cases}
+  \]
+
+  \begin{itemize}
+  \item<1-> \code{(NIL NIL)} encodes \alt<1>{undecidability}
+    {\sout{undecidability}\alert<2>{``input too complex''}}
+  \item<3> Lack of reliability
+  \item<3> Painful limit for some applications
+    \begin{itemize}
+    \item Newton's regular type expressions
+    \item Newton's optimized \code{typecase} implementation
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Baker's decision procedure}
+  \setbeamercovered{highly dynamic}
+  \begin{columns}
+    \column{.45\paperwidth}
+    \begin{itemize}
+    \item[\plus] focus on result accuracy
+    \item[\plus] \emph{never} returns \code{(NIL NIL)} when it is possible to
+      answer
+      \pause
+    \item[\minus] paper difficult to read
+    \item[\minus] not exhaustive
+    \item[\minus] very few solutions about \code{satisfies}
+    \end{itemize}
+
+    \pause
+    \column{.45\paperwidth}
+    \begin{itemize}
+    \item[\minus] no implementation available
+    \item[\minus] exponential complexity (theoretical)
+    \item[\maybe] efficiency% \rarr{} comparable to ``existing'' implementations
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Content}
+  \begin{enumerate}
+    \bf
+    \setlength\itemsep{1em}
+  \item Application using \code{subtypep}
+  \item Baker's decision procedure
+    \begin{enumerate}
+      \setlength\itemsep{.5em}
+      \it
+    \item Pre-processing
+    \item Types as bit-vectors
+    \item Type specifier \rarr{} bit-vector expression
+    \end{enumerate}
+  \item Going further
+  \end{enumerate}
+\end{frame}
+
+% \begin{sectionframe}{Application}
+%   % Step by step application for some simple example
+%   Use case of \code{subtypep}
+% \end{sectionframe}
+
+\begin{frame}[fragile]
+  \frametitle{The problem}
+  \begin{columns}
+    \column{.55\paperwidth}
+\begin{smallclcode}
+(defclass point ()
+  ((x :type number
+      :initarg :x)
+   (y :type number
+      :initarg :y)
+   (name :type string
+         :initarg :name))
+  (:metaclass json-serializable))
+
+(json-serialize (make-instance 'point
+                               :x -10
+                               :y 3.2
+                               :name "a1"))
+\end{smallclcode}
+
+    \pause
+
+    \column{.4\paperwidth}
+  \begin{mintedcodebox}[title=JSON serialization,icon=\faOpera,compact]
+\begin{minted}[fontsize=\scriptsize]{json}
+{
+  "X": -10,
+  "Y": 3.2,
+  "NAME": "a1"
+}
+\end{minted}
+  \end{mintedcodebox}
+
+  \pause
+
+\begin{smallclcode}
+(deftype json ()
+  '(or number
+       string
+       (and symbol
+            (not keyword))
+       list
+       hash-table))
+\end{smallclcode}
+\end{columns}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Our \code{employee} class}
+  \begin{itemize}
+  \item 2 slots \Rarr{} 2 calls to \code{subtypep}
+  \item Trigger error if one fails
+  \end{itemize}
+\begin{clcode}
+(defclass employee ()
+  ((name :type (or string
+                   (and symbol
+                        (not keyword))
+                   unsigned-byte))
+   (part-time-p boolean))
+  (:metaclass json-serializable))
+\end{clcode}
+\end{frame}
+
+\begin{sectionframe}{Baker's decision procedure}
+  Application of our implementation to check\\\smallskip
+  $\code{employee.name} \subseteq \code{json}$
+\end{sectionframe}
+
+\begin{frame}[fragile]
+  \frametitle{Pre-processing steps}
+  \begin{columns}
+    \column{.65\textwidth}
+    \begin{overprint}
+      \onslide<1>
+\begin{clcode}
+(subtypep '(or string
+               (and symbol
+                    (not keyword))
+               unsigned-byte)
+          'json)
+\end{clcode}
+
+      \onslide<2>
+\begin{clcode}
+(subtypep '(or string
+               (and symbol
+                    (not keyword))
+               unsigned-byte)
+          '(or number
+               string
+               (and symbol
+                    (not keyword))
+               list
+               hash-table))
+\end{clcode}
+
+      \onslide<3->
+\begin{clcode}
+(subtypep
+ '(AND (or string
+           (and symbol
+                (not keyword))
+           unsigned-byte)
+        (NOT (or number
+                 string
+                 (and symbol
+                      (not keyword))
+                 list
+                 hash-table)))
+ NIL)
+\end{clcode}
+    \end{overprint}
+
+    \column{.35\textwidth}
+    \begin{itemize}
+    \item<2-> Alias expansion
+    \item<3-> $P \subseteq Q \Rarr P \cap \neg Q = \emptyset$
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\newcommand\bs{\ensuremath{\mathcal B}}
+\begin{frame}[fragile]
+  \frametitle{Bit-vector type representation}
+  \pause
+  \begin{columns}
+    \column{.6\textwidth}
+  Types represented as bit-vectors $\bs_P$
+
+  \[
+    \renewcommand\bs[1]{\ensuremath{\mathcal B_{\scriptsize\code{#1}}}}
+    \bordermatrix{
+      &\code{t}&\code{nil}&\code{sym}&\code{"str"}&\cdots&\code{\scriptsize(l i s t)}\cr
+      \bs{nil}     &0     &0     &0     &0     &\cdots&0\cr
+      \bs{t} &1     &1     &1     &1     &\cdots&1\cr
+      \bs{null}     &0     &1     &0     &0     &\cdots&0\cr
+      \bs{symbol}     &1     &1     &1     &0     &\cdots&0\cr
+      \bs{string}     &0     &0     &0     &1     &\cdots&0\cr
+      \vdots  &\vdots&\vdots&\vdots&\vdots&\ddots&\vdots\cr
+      \bs{list}     &0     &1     &0     &0     &\cdots&1\cr
+    }
+  \]
+
+    \column<3>{.4\textwidth}
+    \begin{block}{Properties (bitwise)}
+      \vspace*{-1em}
+      \begin{align*}
+        \bs_{P \cup Q} &= \bs_P \vee \bs_Q\\
+        \bs_{P \cap Q} &= \bs_P \wedge \bs_Q\\
+        \bs_{\overline P} &= \neg\bs_P
+      \end{align*}
+    \end{block}
+  \end{columns}
+
+  \begin{popup}{.75}
+    \onslide<2>
+  \end{popup}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Back to our problem}
+\begin{clcode}
+(subtypep '(and (or string
+                    (and symbol
+                         (not keyword))
+                    unsigned-byte)
+                (not (or number
+                         string
+                         (and symbol
+                              (not keyword))
+                         list
+                         hash-table)))
+          nil)
+\end{clcode}
+
+  \begin{popup}{.85}
+    \onslide<2-3>
+    \begin{macosbox}{Bit-vector expression reduction}
+      \centering
+      \newcommand\inter{\alt<2>{$\cap$}{$\wedge$}}
+      \newcommand\union{\alt<2>{$\cup$}{$\vee$}}
+      \newcommand\compl{\alt<2>{$\phantom{ }^C$}{$\neg$}}
+      \newcommand\co[1]{\alt<2>{\code{#1}}{\bs{\code{\scriptsize#1}}}}
+      \begin{forest}
+        [\inter
+         [\union
+          [\co{string}]
+          [\inter
+           [\co{symbol}]
+           [\compl [\co{keyword}]]]
+          [\co{unsigned-byte}]]
+         [\compl
+          [\union
+           [\co{number}]
+           [\co{string}]
+           [\inter [\co{symbol}] [\compl [\co{keyword}]]]
+           [\co{list}]
+           [\co{hash-table}]]]]
+      \end{forest}
+    \end{macosbox}
+  \end{popup}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\code{employee} verification}
+  \begin{columns}
+    \column{.65\textwidth}
+\begin{hlclcode}
+(defclass employee ()
+  ((name :type (or string
+                   (and symbol
+                        (not keyword))
+                   unsigned-byte))
+   (half-time-p boolean))
+  (:metaclass json-serializable))
+\end{hlclcode}
+
+\begin{hlclcode}
+(subtypep '(or string
+               (and symbol
+                    (not keyword))
+               unsigned-byte)
+          'json)
+\end{hlclcode}
+
+    \column{.35\textwidth}
+    \begin{itemize}
+    \item[\good] \code{employee.name}
+    \item<2->[\alt<2>{\maybe}{\good}] \code{employee.half-time-p}
+      % \begin{itemize}
+      % \item<3-> $\code{boolean} \subseteq \code{symbol} \Rarr \code{boolean}
+      %   \subseteq \code{json}$
+      % \end{itemize}
+    \end{itemize}
+
+    \pause
+    \bigskip
+    \uncover<4>{%
+      \begin{exampleblock}{Conclusion}
+        \code{employee} is JSON-compatible! \emoji{🎉}
+      \end{exampleblock}}
+  \end{columns}
+\end{frame}
+
+\begin{sectionframe}{CLOS classes \& \code{member} type specifiers}
+  Choosing representative elements right
+\end{sectionframe}
+
+\begin{frame}
+  \frametitle{CLOS classes}
+  \setbeamercovered{highly dynamic}
+
+  \begin{itemize}
+  \item Issue \rarr{} find a representative instance
+  \item Cannot use \code{make-instance} \rarr{} possible side-effects
+    \pause
+  \item Baker's solution
+    \begin{itemize}
+    \item \emph{hook into \code{defclass} implementation}
+    \item[\tiny\minus] not portable
+    \item[\tiny\minus] maybe not trivial
+    \end{itemize}
+  \end{itemize}
+
+  \pause
+
+  \begin{itemize}
+  \item Our solution \rarr{} the Meta Object Protocol
+    \begin{itemize}
+    \item \emph{register class prototypes \rarr{} ``fake'' instances}
+    \item[\tiny\plus] portable (for implementations supporting the MOP)
+    \item[\tiny\plus] easier to implement
+    \item[\tiny\plus] packageable
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{\code{member} type specifiers}
+  \begin{itemize}
+  \item Explicitly provide type's elements
+  \item \code{(member \plholder A \plholder B \plholder C)} $\equiv \{A, B, C\}$
+  \item ``Anonymous'' types
+  \item Bit-vector $\bs_{\scriptsize\code{(member \plholder A \plholder B \plholder
+        C)}}$
+    \begin{enumerate}
+    \item add $A, B, C$ as representatives
+    \item $\bs_{\scriptsize\code{(member \plholder A \plholder B \plholder
+        C)}} = \bs_{\{A\}} \vee \bs_{\{B\}} \vee \bs_{\{C\}}$
+    \end{enumerate}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}[standout]
+  \frametitle{Conclusion}
+  \begin{itemize}
+  \item \code{subtypep} unreliability
+  \item Baker's decision procedure
+    \begin{itemize}
+    \item no implementation given
+    \item many details missing
+    \item seems elegant and powerful
+    \end{itemize}
+  \item Our implementation
+    \begin{itemize}
+    \item incomplete \& experimental
+    \item motivating accuracy \& performance measures
+    \end{itemize}
+  \item Future work
+    \begin{itemize}
+    \item implement missing type specifiers (\code{array} \& \code{complex})
+    \item find solutions for \code{cons} \& \code{satisfies}
+    \item open source the implementation!
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{sectionframe}{\it Thanks for listening! \emoji[\normalsize]{😃}}
+  \it Any question?
+\end{sectionframe}
+
+% \begin{frame}[allowframebreaks]
+%   \bibliographystyle{plain}
+%   \nocite{bib:ansi.94.cl}
+%   \nocite{baker1992}
+%   \nocite{newton.18.els}
+%   \nocite{newton.18.phd}
+%   \nocite{gcl-devel.cons}
+%   \nocite{valais.19.els}
+%   \nocite{verna.06.ecoop}
+%   \bibliography{../common}
+% \end{frame}
+
+\end{document}
