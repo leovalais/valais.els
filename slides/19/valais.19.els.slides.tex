@@ -65,7 +65,7 @@
     \large
   }{\end{frame}}
 
-\begin{sectionframe}{Introduction}
+\begin{sectionframe}{Motivations}
   Common Lisp type system, \code{subtypep} \\\& Baker's decision procedure
 \end{sectionframe}
 
@@ -424,7 +424,7 @@
                    (and symbol
                         (not keyword))
                    unsigned-byte))
-   (half-time-p boolean))
+   (part-time-p boolean))
   (:metaclass json-serializable))
 \end{hlclcode}
 
@@ -439,7 +439,7 @@
     \column{.35\textwidth}
     \begin{itemize}
     \item[\good] \code{employee.name}
-    \item<2->[\alt<2>{\maybe}{\good}] \code{employee.half-time-p}
+    \item<2->[\alt<2>{\maybe}{\good}] \code{employee.part-time-p}
       % \begin{itemize}
       % \item<3-> $\code{boolean} \subseteq \code{symbol} \Rarr \code{boolean}
       %   \subseteq \code{json}$
